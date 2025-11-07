@@ -45,7 +45,7 @@ cd Minigames-All-In-One
 2. **Install dependencies:**
 
 ```bash
-pip install PySide6
+pip install PySide6 pygame
 ```
 
 3. **Run the launcher:**
