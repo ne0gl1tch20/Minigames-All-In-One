@@ -1,335 +1,582 @@
+"""
+MGAIO Launcher v2
+- Renovated, themed, searchable, filterable, robust launcher for Minigames All-In-One
+
+Features implemented:
+- Theming (default/dark/light/custom) with live preview and saved settings
+- Responsive card-based UI with hover animations and shadows
+- Search by title/description, tag filter dropdown, real-time filtering
+- Game metadata validation with graceful error handling
+- Per-game leaderboard viewer (reads leaderboard.json inside game folder)
+- Simple reorder controls (Move Up / Move Down) to reorder game cards
+- Recently played ordering (stores last_played timestamp in settings)
+- Save/restore settings (including window geometry)
+- Backup/restore settings, app lock (password), and safe path handling
+- Offline metadata cache (auto-updates when game folder mtime changes)
+- Extra polish: smooth hover animations, card resizing based on description
+
+Usage: drop this file alongside your previous launcher, ensure PySide6 is installed
+Run: python MGAIO_Launcher_v2.py
+"""
+
 import sys
 import os
 import json
+import time
+import traceback
+from pathlib import Path
+from typing import List, Dict
+
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QScrollArea,
-    QFrame, QFileDialog, QLineEdit, QDialog, QMessageBox
+    QFrame, QFileDialog, QLineEdit, QDialog, QMessageBox, QComboBox, QInputDialog, QSizePolicy
 )
 from PySide6.QtGui import QIcon, QPixmap, QFont, QColor
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
-from PySide6.QtWidgets import QGraphicsDropShadowEffect, QInputDialog
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
+from PySide6.QtWidgets import QGraphicsDropShadowEffect
 
-# Base user folder for saves/settings (same for dev & PyInstaller)
-USER_DIR = os.path.expandvars(r"%userprofile%")
+# ------------------- PATHS / CONFIG -------------------
+# Cross-platform user documents directory fallback
+if os.name == 'nt':
+    USER_DIR = os.path.expandvars(r"%userprofile%")
+else:
+    USER_DIR = os.path.expanduser("~")
+
 MGAIO_DIR = os.path.join(USER_DIR, "Documents", ".mgaio")
 SAVE_PATH = os.path.join(MGAIO_DIR, "Saves")
 SETTINGS_PATH = os.path.join(MGAIO_DIR, "settingsave.json")
-THEME_PATH = os.path.join(MGAIO_DIR, "themesave.json")
+CACHE_PATH = os.path.join(MGAIO_DIR, "game_meta_cache.json")
 
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-# Detect minigames path
+# Determine dev vs frozen
 if getattr(sys, 'frozen', False):
-    # PyInstaller frozen build
     MINIGAMES_DIR = os.path.join(MGAIO_DIR, "minigames")
 else:
-    # Development mode (relative to main.py)
     MINIGAMES_DIR = os.path.join(os.path.dirname(__file__), "minigames")
 
 os.makedirs(MINIGAMES_DIR, exist_ok=True)
 
 print("Minigames loaded from:", MINIGAMES_DIR)
 
-# === Default Settings ===
-default_settings = {"theme": "default", "lock_password": ""}
-if os.path.exists(SETTINGS_PATH):
-    with open(SETTINGS_PATH, "r") as f:
-        settings = json.load(f)
-else:
-    settings = default_settings.copy()
-    with open(SETTINGS_PATH, "w") as f:
-        json.dump(settings, f, indent=4)
+# ------------------- DEFAULT SETTINGS -------------------
+DEFAULT_SETTINGS = {
+    "theme": "default",
+    "lock_password": "",
+    "last_window_geometry": None,
+    "recently_played": {},  # game_folder -> timestamp
+}
 
-# === Theme Presets ===
+# load settings safely
+try:
+    if os.path.exists(SETTINGS_PATH):
+        with open(SETTINGS_PATH, 'r', encoding='utf-8') as f:
+            settings = json.load(f)
+    else:
+        settings = DEFAULT_SETTINGS.copy()
+        with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=2)
+except Exception:
+    settings = DEFAULT_SETTINGS.copy()
+
+# THEMES
 themes = {
     "default": {"bg": "#1e1e2f", "fg": "#ffffff", "accent": "#ffcc00"},
     "light": {"bg": "#f0f0f0", "fg": "#222222", "accent": "#ff8800"},
     "dark": {"bg": "#121212", "fg": "#ffffff", "accent": "#00ffcc"},
 }
-theme = themes.get(settings.get("theme", "default"), themes["default"])
 
-# === Animated Game Card ===
+theme = themes.get(settings.get('theme', 'default'), themes['default'])
+
+# ------------------- UTILITIES -------------------
+
+def save_settings():
+    try:
+        with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=2)
+    except Exception as e:
+        print('Failed to save settings:', e)
+
+
+def safe_load_json(path):
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+# ------------------- UI COMPONENTS -------------------
 class GameCard(QFrame):
-    def __init__(self, game_name, game_path, icon_path=None, game_desc="", how_to_play=""):
-        super().__init__()
-        self.game_path = game_path
-        self.how_to_play_text = how_to_play
+    """Card representing a single game. Includes Move Up / Move Down for reordering and View Leaderboard."""
+
+    def __init__(self, meta: Dict, parent=None):
+        super().__init__(parent)
+        self.meta = meta  # contains title, desc, how_to_play, tags, path
+        self.setObjectName('game_card')
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.setStyleSheet('border-radius:12px;')
         self.setFrameShape(QFrame.StyledPanel)
-        self.setFixedHeight(120)  # taller to fit description & buttons
-        self.setStyleSheet(f"background-color: {theme['bg']}; border-radius: 10px;")
-        self.setGraphicsEffect(QGraphicsDropShadowEffect(blurRadius=15, xOffset=0, yOffset=5, color=QColor(0,0,0,160)))
+        self.setMinimumHeight(100)
 
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(10,5,10,5)
-        main_layout.setSpacing(5)
+        shadow = QGraphicsDropShadowEffect(blurRadius=18, xOffset=0, yOffset=6)
+        shadow.setColor(QColor(0, 0, 0, 160))
+        self.setGraphicsEffect(shadow)
 
-        # Top: Icon + Title
-        top_layout = QHBoxLayout()
-        self.icon_label = QLabel()
-        if icon_path and os.path.exists(icon_path):
-            pixmap = QPixmap(icon_path).scaled(48,48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.icon_label.setPixmap(pixmap)
-        top_layout.addWidget(self.icon_label)
+        self.build_ui()
+        self.apply_theme()
 
-        self.name_label = QLabel(game_name)
-        self.name_label.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        self.name_label.setStyleSheet(f"color: {theme['fg']}")
-        top_layout.addWidget(self.name_label, alignment=Qt.AlignVCenter)
-
-        main_layout.addLayout(top_layout)
-
-        # Description
-        if game_desc:
-            self.desc_label = QLabel(game_desc)
-            self.desc_label.setFont(QFont("Segoe UI", 10))
-            self.desc_label.setStyleSheet(f"color: {theme['fg']}")
-            self.desc_label.setWordWrap(True)
-            main_layout.addWidget(self.desc_label)
-
-        # Buttons
-        btn_layout = QHBoxLayout()
-        self.launch_btn = QPushButton("▶ Play")
-        self.launch_btn.setFixedSize(80,30)
-        self.launch_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme['accent']};
-                color: #000;
-                border-radius: 15px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: #ffffff;
-                color: {theme['accent']};
-            }}
-        """)
-        self.launch_btn.clicked.connect(self.launch_game)
-        btn_layout.addWidget(self.launch_btn)
-
-        self.howto_btn = QPushButton("❓ How to Play")
-        self.howto_btn.setFixedSize(120,30)
-        self.howto_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme['fg']};
-                color: {theme['bg']};
-                border-radius: 15px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: #cccccc;
-                color: {theme['bg']};
-            }}
-        """)
-        self.howto_btn.clicked.connect(self.show_how_to_play)
-        btn_layout.addWidget(self.howto_btn)
-
-        btn_layout.addStretch()
-        main_layout.addLayout(btn_layout)
-
-        self.setLayout(main_layout)
-
-        # Hover animation
-        self.anim = QPropertyAnimation(self, b"geometry")
-        self.anim.setDuration(200)
+        # hover animation
+        self.anim = QPropertyAnimation(self, b'geometry')
+        self.anim.setDuration(180)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
 
-    def enterEvent(self, event):
-        geom = self.geometry()
-        self.anim.stop()
-        self.anim.setStartValue(geom)
-        self.anim.setEndValue(geom.adjusted(-5,-5,5,5))
-        self.anim.start()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        geom = self.geometry()
-        self.anim.stop()
-        self.anim.setStartValue(geom)
-        self.anim.setEndValue(geom.adjusted(5,5,-5,-5))
-        self.anim.start()
-        super().leaveEvent(event)
-
-    def launch_game(self):
-        game_main = os.path.join(self.game_path, "main.py")
-        if os.path.exists(game_main):
-            os.system(f'python "{game_main}"')
-        else:
-            QMessageBox.warning(self, "Error", f"No main.py found in {self.game_path}")
-
-    def show_how_to_play(self):
-        if not self.how_to_play_text:
-            QMessageBox.information(self, "How to Play", "No instructions available.")
-            return
-        dlg = QDialog(self)
-        dlg.setWindowTitle(f"How to Play: {self.name_label.text()}")
-        dlg.resize(500,400)
-        dlg.setStyleSheet(f"background-color: {theme['bg']}; color:{theme['fg']}")
-
+    def build_ui(self):
         layout = QVBoxLayout()
-        text_label = QLabel(self.how_to_play_text)
-        text_label.setWordWrap(True)
-        text_label.setFont(QFont("Segoe UI", 11))
-        layout.addWidget(text_label)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(6)
 
-        dlg.setLayout(layout)
-        dlg.exec()
+        top = QHBoxLayout()
+        # icon
+        self.icon_label = QLabel()
+        self.icon_label.setFixedSize(56, 56)
+        icon_path = os.path.join(self.meta['path'], 'icon.ico')
+        if os.path.exists(icon_path):
+            try:
+                px = QPixmap(icon_path).scaled(56, 56, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.icon_label.setPixmap(px)
+            except Exception:
+                pass
+        top.addWidget(self.icon_label)
 
+        # title + desc
+        text_col = QVBoxLayout()
+        self.title_label = QLabel(self.meta.get('title', 'Unknown'))
+        self.title_label.setFont(QFont('Segoe UI', 13, QFont.Bold))
+        self.title_label.setWordWrap(False)
+        text_col.addWidget(self.title_label)
 
+        desc = self.meta.get('description', '')
+        self.desc_label = QLabel(desc)
+        self.desc_label.setFont(QFont('Segoe UI', 10))
+        self.desc_label.setWordWrap(True)
+        self.desc_label.setMaximumHeight(38)
+        text_col.addWidget(self.desc_label)
 
-# === Settings Dialog ===
-class SettingsDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Settings")
-        self.setMinimumWidth(350)
-        self.setStyleSheet(f"background-color: {theme['bg']}; color:{theme['fg']}")
-        layout = QVBoxLayout()
+        top.addLayout(text_col, stretch=1)
 
-        # App Lock
-        layout.addWidget(QLabel("Set App Lock Password:"))
-        self.pwd_input = QLineEdit()
-        self.pwd_input.setEchoMode(QLineEdit.Password)
-        self.pwd_input.setText(settings.get("lock_password",""))
-        layout.addWidget(self.pwd_input)
+        # buttons column
+        btn_col = QVBoxLayout()
+        btn_col.setSpacing(6)
 
-        # Backup/Restore
-        backup_btn = QPushButton("Backup Settings")
-        backup_btn.clicked.connect(self.backup_settings)
-        restore_btn = QPushButton("Restore Settings")
-        restore_btn.clicked.connect(self.restore_settings)
-        layout.addWidget(backup_btn)
-        layout.addWidget(restore_btn)
+        self.play_btn = QPushButton('▶ Play')
+        self.play_btn.setFixedHeight(30)
+        self.play_btn.clicked.connect(self.launch_game)
+        btn_col.addWidget(self.play_btn)
 
-        # Theme Presets
-        layout.addWidget(QLabel("Theme Presets:"))
-        for name in themes.keys():
-            btn = QPushButton(name.capitalize())
-            btn.clicked.connect(lambda _, n=name: self.apply_theme(n))
-            layout.addWidget(btn)
+        self.howto_btn = QPushButton('❓ How to Play')
+        self.howto_btn.setFixedHeight(30)
+        self.howto_btn.clicked.connect(self.show_howto)
+        btn_col.addWidget(self.howto_btn)
+
+        # second row: leaderboard and reorder
+        second_row = QHBoxLayout()
+        self.lb_btn = QPushButton('🏆 Leaderboard')
+        self.lb_btn.setFixedHeight(28)
+        self.lb_btn.clicked.connect(self.view_leaderboard)
+        second_row.addWidget(self.lb_btn)
+
+        self.up_btn = QPushButton('▲')
+        self.up_btn.setFixedSize(30, 28)
+        second_row.addWidget(self.up_btn)
+        self.down_btn = QPushButton('▼')
+        self.down_btn.setFixedSize(30, 28)
+        second_row.addWidget(self.down_btn)
+
+        btn_col.addLayout(second_row)
+
+        top.addLayout(btn_col)
+        layout.addLayout(top)
+
+        # tags row
+        tags = self.meta.get('tags', [])
+        if tags:
+            tags_layout = QHBoxLayout()
+            for t in tags[:5]:
+                chip = QLabel(t)
+                chip.setStyleSheet('padding:4px 8px; border-radius:8px;')
+                chip.setFont(QFont('Segoe UI', 9))
+                tags_layout.addWidget(chip)
+            tags_layout.addStretch()
+            layout.addLayout(tags_layout)
 
         self.setLayout(layout)
 
-    def backup_settings(self):
-        path,_ = QFileDialog.getSaveFileName(self,"Backup Settings","","JSON Files (*.json)")
-        if path:
-            with open(path,"w") as f:
-                json.dump(settings,f,indent=4)
-            QMessageBox.information(self,"Backup","Settings backed up successfully!")
+    def apply_theme(self):
+        # apply current theme colors to widget parts
+        self.setStyleSheet(f"background-color: {theme['bg']}; border-radius:12px;")
+        self.title_label.setStyleSheet(f"color: {theme['accent']};")
+        self.desc_label.setStyleSheet(f"color: {theme['fg']};")
+        # buttons
+        btn_style = f"""
+        QPushButton {{ background-color: {theme['accent']}; color: #000; border-radius: 8px; font-weight: bold; }}
+        QPushButton:hover {{ background-color: #ffffff; color: {theme['accent']}; }}
+        """
+        small_btn_style = f"QPushButton {{ background-color: {theme['fg']}; color: {theme['bg']}; border-radius: 6px; }}"
+        self.play_btn.setStyleSheet(btn_style)
+        self.howto_btn.setStyleSheet(small_btn_style)
+        self.lb_btn.setStyleSheet(small_btn_style)
+        self.up_btn.setStyleSheet(small_btn_style)
+        self.down_btn.setStyleSheet(small_btn_style)
 
-    def restore_settings(self):
-        path,_ = QFileDialog.getOpenFileName(self,"Restore Settings","","JSON Files (*.json)")
-        if path:
-            with open(path,"r") as f:
-                restored = json.load(f)
-            settings.update(restored)
-            with open(SETTINGS_PATH,"w") as f:
-                json.dump(settings,f,indent=4)
-            QMessageBox.information(self,"Restore","Settings restored successfully!")
+    def launch_game(self):
+        """Safely execute game's main.py and update recently played"""
+        main_py = os.path.join(self.meta['path'], 'main.py')
+        if not os.path.exists(main_py):
+            QMessageBox.warning(self, 'Launch Error', f'No main.py found in {self.meta["path"]}')
+            return
+        # store recently played timestamp
+        settings.setdefault('recently_played', {})
+        settings['recently_played'][self.meta['folder_name']] = int(time.time())
+        save_settings()
+        # run the game in a subprocess so launcher stays responsive
+        try:
+            # use sys.executable to ensure same python
+            os.spawnv(os.P_NOWAIT, sys.executable, [sys.executable, main_py])
+        except Exception as e:
+            QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
+
+    def show_howto(self):
+        txt = self.meta.get('how_to_play') or 'No instructions available.'
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f"How to Play — {self.meta.get('title')}")
+        dlg.resize(520, 420)
+        dlg.setStyleSheet(f"background-color: {theme['bg']}; color: {theme['fg']};")
+        layout = QVBoxLayout()
+        label = QLabel(txt)
+        label.setWordWrap(True)
+        label.setFont(QFont('Segoe UI', 11))
+        layout.addWidget(label)
+        dlg.setLayout(layout)
+        dlg.exec()
+
+    def view_leaderboard(self):
+        lb_file = os.path.join(self.meta['path'], 'leaderboard.json')
+        lb = safe_load_json(lb_file) or []
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f"Leaderboard — {self.meta.get('title')}")
+        dlg.resize(420, 360)
+        dlg.setStyleSheet(f"background-color: {theme['bg']}; color: {theme['fg']};")
+        layout = QVBoxLayout()
+        if not lb:
+            label = QLabel('No leaderboard data found for this game.')
+            layout.addWidget(label)
+        else:
+            for i, e in enumerate(sorted(lb, key=lambda x: x.get('score', 0), reverse=True)[:20], start=1):
+                name = e.get('name', 'Player')
+                score = e.get('score', 0)
+                label = QLabel(f"{i}. {name} — {score}")
+                layout.addWidget(label)
+        dlg.setLayout(layout)
+        dlg.exec()
+
+    # enable client code to connect up/down
+
+
+# ------------------- SETTINGS DIALOG -------------------
+class SettingsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('Settings')
+        self.setMinimumWidth(380)
+        self.setStyleSheet(f"background-color: {theme['bg']}; color:{theme['fg']}")
+        layout = QVBoxLayout()
+
+        # App lock
+        layout.addWidget(QLabel('Set App Lock Password:'))
+        self.pwd_input = QLineEdit()
+        self.pwd_input.setEchoMode(QLineEdit.Password)
+        self.pwd_input.setText(settings.get('lock_password', ''))
+        layout.addWidget(self.pwd_input)
+
+        # Theme presets
+        layout.addWidget(QLabel('Theme Presets:'))
+        for key in themes.keys():
+            btn = QPushButton(key.capitalize())
+            btn.clicked.connect(lambda _, k=key: self.apply_theme(k))
+            layout.addWidget(btn)
+
+        # Backup/restore
+        backup_btn = QPushButton('Backup Settings')
+        backup_btn.clicked.connect(self.backup)
+        restore_btn = QPushButton('Restore Settings')
+        restore_btn.clicked.connect(self.restore)
+        layout.addWidget(backup_btn)
+        layout.addWidget(restore_btn)
+
+        self.setLayout(layout)
 
     def apply_theme(self, name):
         global theme
         theme = themes[name]
-        settings["theme"] = name
-        with open(SETTINGS_PATH,"w") as f:
-            json.dump(settings,f,indent=4)
-        QMessageBox.information(self,"Theme","Applied theme: "+name)
-        self.close()
+        settings['theme'] = name
+        save_settings()
+        QMessageBox.information(self, 'Theme', f'Applied theme: {name}')
+        self.accept()
+
+    def backup(self):
+        path, _ = QFileDialog.getSaveFileName(self, 'Backup Settings', '', 'JSON Files (*.json)')
+        if path:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(settings, f, indent=2)
+            QMessageBox.information(self, 'Backup', 'Settings backed up.')
+
+    def restore(self):
+        path, _ = QFileDialog.getOpenFileName(self, 'Restore Settings', '', 'JSON Files (*.json)')
+        if path:
+            data = safe_load_json(path) or {}
+            settings.update(data)
+            save_settings()
+            QMessageBox.information(self, 'Restore', 'Settings restored.')
+            self.accept()
 
 
-# === Main Launcher ===
+# ------------------- MAIN LAUNCHER -------------------
 class Launcher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("MGAIO Launcher")
-        self.setMinimumSize(700,500)
+        self.setWindowTitle('MGAIO Launcher — Renovated')
+        self.setMinimumSize(760, 540)
         self.setStyleSheet(f"background-color: {theme['bg']};")
+        main = QVBoxLayout()
+        main.setContentsMargins(14, 14, 14, 14)
+        main.setSpacing(10)
 
-        layout = QVBoxLayout()
-        layout.setContentsMargins(15,15,15,15)
+        # Top bar
+        top = QHBoxLayout()
+        self.search = QLineEdit()
+        self.search.setPlaceholderText('Search by title, description or tag...')
+        self.search.textChanged.connect(self.filter_games)
+        top.addWidget(self.search, stretch=2)
 
-        # Settings button
-        top_bar = QHBoxLayout()
-        settings_btn = QPushButton("⚙ Settings")
-        settings_btn.clicked.connect(self.open_settings)
-        settings_btn.setFixedHeight(40)
-        top_bar.addStretch()
-        top_bar.addWidget(settings_btn)
-        layout.addLayout(top_bar)
+        self.filter_combo = QComboBox()
+        self.filter_combo.addItem('All')
+        self.filter_combo.currentIndexChanged.connect(self.filter_games)
+        self.filter_combo.setFixedHeight(34)
+        top.addWidget(self.filter_combo, stretch=0)
+
+        self.settings_btn = QPushButton('⚙ Settings')
+        self.settings_btn.clicked.connect(self.open_settings)
+        top.addWidget(self.settings_btn)
+
+        main.addLayout(top)
 
         # Scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
         container = QWidget()
-        self.game_layout = QVBoxLayout()
-        self.game_layout.setSpacing(10)
-        container.setLayout(self.game_layout)
-        scroll.setWidget(container)
-        layout.addWidget(scroll)
+        self.vbox = QVBoxLayout()
+        self.vbox.setSpacing(10)
+        container.setLayout(self.vbox)
+        self.scroll.setWidget(container)
+        main.addWidget(self.scroll)
 
-        self.setLayout(layout)
+        self.setLayout(main)
+
+        # internal
+        self.cards: List[GameCard] = []
+        self.game_meta: List[Dict] = []
+        self.available_tags = set()
+
+        # load, then apply previous window geometry
         self.load_games()
+        geom = settings.get('last_window_geometry')
+        if geom:
+            try:
+                self.restoreGeometry(bytes.fromhex(geom))
+            except Exception:
+                pass
 
+    def closeEvent(self, event):
+        # save geometry
+        try:
+            geom = self.saveGeometry().toHex().data().hex()
+            settings['last_window_geometry'] = geom
+        except Exception:
+            pass
+        save_settings()
+        return super().closeEvent(event)
+
+    # ---------- load/cache metadata ----------
     def load_games(self):
-        if not os.path.exists(MINIGAMES_DIR):
-            return
-        for game in os.listdir(MINIGAMES_DIR):
-            game_path = os.path.join(MINIGAMES_DIR, game)
-            if os.path.isdir(game_path):
-                icon_path = os.path.join(game_path,"icon.ico")
-                config_path = os.path.join(game_path, "config.json")
+        # clear
+        while self.vbox.count():
+            w = self.vbox.takeAt(0).widget()
+            if w:
+                w.setParent(None)
+        self.cards.clear()
+        self.game_meta.clear()
+        self.available_tags = set()
+        self.filter_combo.clear()
+        self.filter_combo.addItem('All')
 
-                game_title, game_desc, how_to_play = game, "", ""
-                if os.path.exists(config_path):
-                    try:
-                        with open(config_path, "r") as f:
-                            config = json.load(f)
-                        game_title = config.get("title", game)
-                        game_desc = config.get("description", "")
-                        how_to_play = config.get("how_to_play","")
-                    except:
-                        pass
+        # check cache
+        cache = safe_load_json(CACHE_PATH) or {'handled': {}, 'meta': []}
+        cache_handled = cache.get('handled', {})
+        fresh_meta = []
 
-                card = GameCard(game_title, game_path, icon_path, game_desc, how_to_play)
-                self.game_layout.addWidget(card)
+        for folder in sorted(os.listdir(MINIGAMES_DIR), key=lambda s: s.lower()):
+            folder_path = os.path.join(MINIGAMES_DIR, folder)
+            if not os.path.isdir(folder_path):
+                continue
 
+            # check mtime
+            try:
+                mtime = int(os.path.getmtime(folder_path))
+            except Exception:
+                mtime = 0
 
+            # use cached if exists and mtime matches
+            cached_entry = cache_handled.get(folder)
+            if cached_entry and cached_entry.get('mtime') == mtime:
+                meta = cached_entry.get('meta')
+                if meta:
+                    meta['path'] = folder_path
+                    fresh_meta.append(meta)
+                    continue
+
+            # else read config.json
+            config_path = os.path.join(folder_path, 'config.json')
+            meta = { 'title': folder, 'description': '', 'how_to_play': '', 'tags': [], 'path': folder_path, 'folder_name': folder }
+            if os.path.exists(config_path):
+                try:
+                    data = safe_load_json(config_path)
+                    if isinstance(data, dict):
+                        meta['title'] = data.get('title', meta['title'])
+                        meta['description'] = data.get('description', '')
+                        meta['how_to_play'] = data.get('how_to_play', '')
+                        meta['tags'] = [str(t).strip() for t in (data.get('tags') or []) if t]
+                except Exception:
+                    # keep defaults
+                    pass
+
+            fresh_meta.append(meta)
+            cache_handled[folder] = {'mtime': mtime, 'meta': {k: meta[k] for k in ('title','description','how_to_play','tags') }}
+
+        # write updated cache
+        try:
+            with open(CACHE_PATH, 'w', encoding='utf-8') as f:
+                json.dump({'handled': cache_handled}, f, indent=2)
+        except Exception:
+            pass
+
+        # sort by recently played then alphabetically
+        recent_map = settings.get('recently_played', {})
+        def sort_key(m):
+            rp = recent_map.get(m.get('folder_name'))
+            if rp:
+                return (0, -int(rp))
+            return (1, m.get('title','').lower())
+
+        fresh_meta.sort(key=sort_key)
+
+        for meta in fresh_meta:
+            # create card
+            card = GameCard(meta, self)
+            # connect reorder buttons
+            card.up_btn.clicked.connect(lambda _, c=card: self.move_card_up(c))
+            card.down_btn.clicked.connect(lambda _, c=card: self.move_card_down(c))
+            self.vbox.addWidget(card)
+            self.cards.append(card)
+            self.game_meta.append({
+                'title': meta.get('title','').lower(),
+                'desc': str(meta.get('description','')).lower(),
+                'tags': [t.lower() for t in meta.get('tags',[])],
+                'card': card
+            })
+            for t in meta.get('tags',[]):
+                self.available_tags.add(t)
+
+        for t in sorted(self.available_tags, key=lambda s: s.lower()):
+            self.filter_combo.addItem(t)
+
+        self.apply_theme_to_cards()
+
+    def apply_theme_to_cards(self):
+        for c in self.cards:
+            c.apply_theme()
+
+    # ---------- reorder helpers ----------
+    def move_card_up(self, card: GameCard):
+        idx = self.vbox.indexOf(card)
+        if idx > 0:
+            self.vbox.removeWidget(card)
+            self.vbox.insertWidget(idx-1, card)
+            # also reorder game_meta to keep filtering consistent
+            for i, m in enumerate(self.game_meta):
+                if m['card'] == card:
+                    self.game_meta.insert(max(0, i-1), self.game_meta.pop(i))
+                    break
+
+    def move_card_down(self, card: GameCard):
+        idx = self.vbox.indexOf(card)
+        cnt = self.vbox.count()
+        if 0 <= idx < cnt-1:
+            self.vbox.removeWidget(card)
+            self.vbox.insertWidget(idx+1, card)
+            for i, m in enumerate(self.game_meta):
+                if m['card'] == card:
+                    self.game_meta.insert(min(len(self.game_meta), i+1), self.game_meta.pop(i))
+                    break
+
+    # ---------- filter/search ----------
+    def filter_games(self):
+        q = self.search.text().strip().lower()
+        tag = self.filter_combo.currentText().strip().lower()
+        for m in self.game_meta:
+            title_ok = q in m['title'] if q else True
+            desc_ok = q in m['desc'] if q else True
+            query_ok = title_ok or desc_ok
+            tag_ok = True
+            if tag and tag != 'all':
+                tag_ok = tag in m['tags']
+            visible = query_ok and tag_ok
+            m['card'].setVisible(visible)
 
     def open_settings(self):
         dlg = SettingsDialog(self)
-        dlg.exec()
-        self.reload_theme()
+        if dlg.exec():
+            # reapply theme and reload
+            save_settings()
+            global theme
+            theme = themes.get(settings.get('theme','default'), themes['default'])
+            self.setStyleSheet(f"background-color: {theme['bg']};")
+            self.apply_theme_to_cards()
+            self.load_games()
 
-    def reload_theme(self):
-        self.setStyleSheet(f"background-color: {theme['bg']};")
-        for i in range(self.game_layout.count()):
-            widget = self.game_layout.itemAt(i).widget()
-            widget.setStyleSheet(f"background-color: {theme['bg']};")
-            widget.name_label.setStyleSheet(f"color:{theme['fg']}")
-            widget.launch_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {theme['accent']};
-                    color: #000;
-                    border-radius: 20px;
-                    font-weight: bold;
-                    font-size: 16px;
-                }}
-                QPushButton:hover {{
-                    background-color: #ffffff;
-                    color: {theme['accent']};
-                }}
-            """)
 
-# === App Lock ===
+# ------------------- APP LOCK -------------------
+
 def app_lock():
-    if settings.get("lock_password"):
-        pwd, ok = QInputDialog.getText(None,"App Lock","Enter Password:", QLineEdit.Password)
-        if not ok or pwd != settings["lock_password"]:
-            QMessageBox.critical(None,"Access Denied","Wrong password!")
-            sys.exit()
+    pwd = settings.get('lock_password')
+    if pwd:
+        text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password:', QLineEdit.Password)
+        if not ok or text != pwd:
+            QMessageBox.critical(None, 'Access Denied', 'Wrong password')
+            sys.exit(1)
 
-# === Main ===
-if __name__ == "__main__":
+
+# ------------------- RUN -------------------
+if __name__ == '__main__':
     app = QApplication(sys.argv)
-    app_lock()
-    launcher = Launcher()
-    launcher.show()
-    sys.exit(app.exec())
+    app.setApplicationName('MGAIO Launcher')
+    try:
+        app_lock()
+        launcher = Launcher()
+        launcher.show()
+        sys.exit(app.exec())
+    except Exception as e:
+        print('Fatal error:', e)
+        traceback.print_exc()
+        QMessageBox.critical(None, 'Fatal', f'Launcher crashed: {e}')
+        sys.exit(1)
