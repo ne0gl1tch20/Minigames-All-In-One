@@ -348,12 +348,14 @@ class Launcher(QWidget):
         self.setWindowTitle('MGAIO Launcher — Renovated')
         self.setMinimumSize(760, 540)
         self.setStyleSheet(f"background-color: {theme['bg']};")
+        
         main = QVBoxLayout()
         main.setContentsMargins(14, 14, 14, 14)
         main.setSpacing(10)
 
-        # Top bar
+        # ----------------- Top Bar -----------------
         top = QHBoxLayout()
+
         self.search = QLineEdit()
         self.search.setPlaceholderText('Search by title, description or tag...')
         self.search.textChanged.connect(self.filter_games)
@@ -369,9 +371,17 @@ class Launcher(QWidget):
         self.settings_btn.clicked.connect(self.open_settings)
         top.addWidget(self.settings_btn)
 
-        main.addLayout(top)
+        self.help_btn = QPushButton('❔ Help')
+        self.help_btn.clicked.connect(self.show_help)
+        top.addWidget(self.help_btn)
 
-        # Scroll area
+        self.about_btn = QPushButton('ℹ About')
+        self.about_btn.clicked.connect(self.show_about)
+        top.addWidget(self.about_btn)
+
+        main.addLayout(top)  # ✅ add the single top bar once
+
+        # ----------------- Scroll Area -----------------
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         container = QWidget()
@@ -383,12 +393,12 @@ class Launcher(QWidget):
 
         self.setLayout(main)
 
-        # internal
+        # ----------------- Internal Data -----------------
         self.cards: List[GameCard] = []
         self.game_meta: List[Dict] = []
         self.available_tags = set()
 
-        # load, then apply previous window geometry
+        # load games and apply previous geometry
         self.load_games()
         geom = settings.get('last_window_geometry')
         if geom:
@@ -396,6 +406,7 @@ class Launcher(QWidget):
                 self.restoreGeometry(bytes.fromhex(geom))
             except Exception:
                 pass
+
 
     def closeEvent(self, event):
         # save geometry
@@ -469,7 +480,7 @@ class Launcher(QWidget):
                 json.dump({'handled': cache_handled}, f, indent=2)
         except Exception:
             pass
-
+        
         # sort by recently played then alphabetically
         recent_map = settings.get('recently_played', {})
         def sort_key(m):
@@ -501,6 +512,53 @@ class Launcher(QWidget):
             self.filter_combo.addItem(t)
 
         self.apply_theme_to_cards()
+
+    # ------------------- New methods in Launcher class -------------------
+
+    def show_help(self):
+        dlg = QDialog(self)
+        dlg.setWindowTitle('MGAIO Launcher Help')
+        dlg.resize(520, 420)
+        dlg.setStyleSheet(f"background-color: {theme['bg']}; color: {theme['fg']};")
+        layout = QVBoxLayout()
+        txt = (
+        "Welcome to MGAIO Launcher!\n\n"
+        "• Use the search box to find games by title, description, or tags.\n"
+        "• Filter games using the tag dropdown.\n"
+        "• Click '▶ Play' to launch a game.\n"
+        "• Click '❓ How to Play' to view game instructions.\n"
+        "• '🏆 Leaderboard' shows top scores for each game.\n"
+        "• Move games up/down to reorder them.\n"
+        "• Settings allow theme changes, backups, and app lock.\n\n"
+        "Enjoy your games! 🎮"
+        )
+        label = QLabel(txt)
+        label.setWordWrap(True)
+        label.setFont(QFont('Segoe UI', 11))
+        layout.addWidget(label)
+        dlg.setLayout(layout)
+        dlg.exec()
+
+    def show_about(self):
+        dlg = QDialog(self)
+        dlg.setWindowTitle('About MGAIO Launcher')
+        dlg.resize(400, 280)
+        dlg.setStyleSheet(f"background-color: {theme['bg']}; color: {theme['fg']};")
+        layout = QVBoxLayout()
+        txt = (
+        "MGAIO Launcher v2\n"
+        "Minigames All-In-One\n\n"
+        "• Developed for offline minigame management\n"
+        "• Features theming, search, filtering, and leaderboards\n"
+        "• Saveable settings, app lock, and smooth UI\n\n"
+        "© 2025 MGAIO Project"
+        )
+        label = QLabel(txt)
+        label.setWordWrap(True)
+        label.setFont(QFont('Segoe UI', 11))
+        layout.addWidget(label)
+        dlg.setLayout(layout)
+        dlg.exec()
 
     def apply_theme_to_cards(self):
         for c in self.cards:
