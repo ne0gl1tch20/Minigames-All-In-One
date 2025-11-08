@@ -56,6 +56,9 @@ Secure your launcher with a password to prevent unauthorized access.
 * Mini reward system: earn coins per game
 * Optional in-game achievement tracking
 
+### 📷 Screenshots
+
+
 ---
 
 ## 📦 Installation
