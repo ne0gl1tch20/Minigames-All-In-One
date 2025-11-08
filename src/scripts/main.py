@@ -350,6 +350,9 @@ class SettingsDialog(QDialog):
 class Launcher(QWidget):
     def __init__(self):
         super().__init__()
+        
+        self.setWindowIcon(QIcon(self.resource_path("data/icon.ico")))        
+        
         self.setWindowTitle('Minigames All In One Launcher')
         self.setMinimumSize(760, 540)
         self.setStyleSheet(f"background-color: {theme['bg']};")
@@ -418,6 +421,12 @@ class Launcher(QWidget):
             except Exception:
                 pass
 
+    @staticmethod
+    def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and PyInstaller """
+        if hasattr(sys, "_MEIPASS"):
+            return os.path.join(sys._MEIPASS, relative_path)
+        return os.path.join(os.path.abspath("."), relative_path)
 
     def closeEvent(self, event):
         # save geometry
