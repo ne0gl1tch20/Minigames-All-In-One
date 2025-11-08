@@ -2,5 +2,5 @@
   "title": "Flappy Bird Clone",
   "description": "Navigate your bird through endless pipes and try to get the highest score possible. Simple, addictive, and fun!",
   "how_to_play": "1. Press Play to start the game.\n2. Press SPACE or tap the screen to make the bird flap.\n3. Avoid hitting the pipes and the ground.\n4. Each pair of pipes you pass gives 1 point.\n5. Try to beat your high score!\n\nTips:\n- Keep a steady rhythm.\n- Don’t panic when the bird falls.\n- Focus on the next gap, not too far ahead.",
-  "tags": ["Arcade", "Flappy", "Endless", "Reaction"],
+  "tags": ["Arcade", "Flappy", "Endless", "Reaction"]
 }
