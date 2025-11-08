@@ -7,7 +7,6 @@ Features implemented:
 - Responsive card-based UI with hover animations and shadows
 - Search by title/description, tag filter dropdown, real-time filtering
 - Game metadata validation with graceful error handling
-- Per-game leaderboard viewer (reads leaderboard.json inside game folder)
 - Simple reorder controls (Move Up / Move Down) to reorder game cards
 - Recently played ordering (stores last_played timestamp in settings)
 - Save/restore settings (including window geometry)
@@ -181,10 +180,6 @@ class GameCard(QFrame):
 
         # second row: leaderboard and reorder
         second_row = QHBoxLayout()
-        self.lb_btn = QPushButton('🏆 Leaderboard')
-        self.lb_btn.setFixedHeight(28)
-        self.lb_btn.clicked.connect(self.view_leaderboard)
-        second_row.addWidget(self.lb_btn)
 
         self.up_btn = QPushButton('▲')
         self.up_btn.setFixedSize(30, 28)
@@ -225,7 +220,6 @@ class GameCard(QFrame):
         small_btn_style = f"QPushButton {{ background-color: {theme['fg']}; color: {theme['bg']}; border-radius: 6px; }}"
         self.play_btn.setStyleSheet(btn_style)
         self.howto_btn.setStyleSheet(small_btn_style)
-        self.lb_btn.setStyleSheet(small_btn_style)
         self.up_btn.setStyleSheet(small_btn_style)
         self.down_btn.setStyleSheet(small_btn_style)
 
@@ -265,27 +259,6 @@ class GameCard(QFrame):
         dlg.setLayout(layout)
         dlg.exec()
 
-    def view_leaderboard(self):
-        lb_file = os.path.join(self.meta['path'], 'leaderboard.json')
-        lb = safe_load_json(lb_file) or []
-        dlg = QDialog(self)
-        dlg.setWindowTitle(f"Leaderboard — {self.meta.get('title')}")
-        dlg.resize(420, 360)
-        dlg.setStyleSheet(f"background-color: {theme['bg']}; color: {theme['fg']};")
-        layout = QVBoxLayout()
-        if not lb:
-            label = QLabel('No leaderboard data found for this game.')
-            layout.addWidget(label)
-        else:
-            for i, e in enumerate(sorted(lb, key=lambda x: x.get('score', 0), reverse=True)[:20], start=1):
-                name = e.get('name', 'Player')
-                score = e.get('score', 0)
-                label = QLabel(f"{i}. {name} — {score}")
-                layout.addWidget(label)
-        dlg.setLayout(layout)
-        dlg.exec()
-
-    # enable client code to connect up/down
 
 
 # ------------------- SETTINGS DIALOG -------------------
@@ -556,7 +529,6 @@ class Launcher(QWidget):
         "• Filter games using the tag dropdown.\n"
         "• Click '▶ Play' to launch a game.\n"
         "• Click '❓ How to Play' to view game instructions.\n"
-        "• '🏆 Leaderboard' shows top scores for each game.\n"
         "• Move games up/down to reorder them.\n"
         "• Settings allow theme changes, backups, and app lock.\n\n"
         "Enjoy your games! 🎮"
