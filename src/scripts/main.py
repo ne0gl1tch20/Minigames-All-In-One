@@ -350,7 +350,7 @@ class SettingsDialog(QDialog):
 class Launcher(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('MGAIO Launcher — Renovated')
+        self.setWindowTitle('Minigames All In One Launcher')
         self.setMinimumSize(760, 540)
         self.setStyleSheet(f"background-color: {theme['bg']};")
         
