@@ -2,125 +2,53 @@
 
 **Minigames All-In-One Launcher** built with Python and PySide6. 🎮✨
 
-This launcher allows you to organize, launch, and manage multiple minigames from a single application. It supports themes, app lock, game descriptions, and a visually interactive UI.
+Organize, launch, and manage all your minigames from a single interactive application. MGAIO supports themes, game descriptions, achievements, app lock, and a polished UI experience.
 
 ---
 
 ## Features
 
-* **Dynamic Game Cards**
-  Each minigame is displayed as an animated card with:
+### 🎴 Dynamic Game Cards
+Each minigame is displayed as an animated card with:
+* Icon & title
+* Short description
+* "Play" button
+* "How to Play" instructions
+* Optional version info (`version` in `config.json`)
 
-  * Icon & title
-  * Game description
-  * "Play" button
-  * "How to Play" instructions
+### 🎨 Theme Support
+Switch between multiple themes:
+* Default
+* Light
+* Dark
 
-* **Theme Support**
-  Switch between default, light, and dark themes. Themes are saved in your settings.
+Themes are saved in your settings and applied automatically on next launch.
 
-* **App Lock**
-  Set a password to lock the launcher for privacy and security.
+### 🔒 App Lock
+Secure your launcher with a password to prevent unauthorized access.
 
-* **Settings Management**
-  Backup and restore your launcher settings via JSON.
+### ⚙️ Settings Management
+* Backup and restore settings via JSON
+* Track recently played games
+* Coin / mini reward system for game play
 
-* **Resizable & Scrollable UI**
-  Supports vertical scrolling to browse your games, with animated hover effects.
+### 📜 Resizable & Scrollable UI
+* Browse your games with smooth vertical scrolling
+* Animated hover effects for an interactive feel
+* Grid or list layout planned for future updates
 
-* **PyInstaller Ready**
-  Works both in development and as a packaged executable. Saves are stored in the user's Documents folder.
+### 🛠️ PyInstaller Ready
+* Works both in development (Python) and packaged as an executable
+* Game saves and settings stored in `Documents/.mgaio/` by default
+* Auto-detects minigames folder and icons
 
----
-
-## Installation
-
-1. **Clone the repository:**
-
-```bash
-git clone https://github.com/ne0gl1tch20/Minigames-All-In-One.git
-cd Minigames-All-In-One
-```
-
-2. **Install dependencies:**
-
-```bash
-pip install PySide6 pygame
-```
-
-3. **Run the launcher:**
-
-```bash
-python src/scripts/main.py
-```
-
-> If you plan to package it with PyInstaller, the launcher automatically detects the minigames folder and saves settings in the user’s Documents.
+### 🏆 Achievements & Rewards
+* First play, 5 plays, 10 plays
+* Mini reward system: earn coins per game
+* Optional in-game achievement tracking
 
 ---
 
-## Directory Structure
+## 📦 Installation
 
-```
-MGAIO/
-├─ src/
-│  ├─ scripts/
-│  │  └─ main.py          # Launcher script
-├─ minigames/             # Each minigame folder here
-│  ├─ Game1/
-│  │  ├─ main.py
-│  │  ├─ config.json      # Optional: title, description, how_to_play
-│  │  └─ icon.ico
-│  └─ Game2/
-├─ Documents/
-   └─ .mgaio/
-      ├─ Saves/           # Game save files
-      ├─ settingsave.json # Launcher settings
-      └─ themesave.json   # Selected theme
-```
-
----
-
-## Game Card Config (`config.json`)
-
-Optional JSON file for each minigame:
-
-```json
-{
-  "title": "Game Title",
-  "description": "Short game description",
-  "how_to_play": "Instructions for the player",
-  "version": "1.0.0"
-}
-```
-
----
-
-## Notes
-
-* The launcher works in **dev mode** or as a **PyInstaller executable**.
-* All saves and settings are stored under `Documents/.mgaio/`.
-* Hover animations, shadows, and UI polish enhance the user experience.
-* If `main.py` is missing from a minigame, the launcher shows a warning instead of crashing.
-
----
-
-## Future Features (Planned)
-
-* Search & filter games
-* Favorites / pinned games
-* Recently played section
-* Grid/List view toggle
-* Game stats & achievements
-* Drag-and-drop reordering
-* Background music and UI sounds
-* Error logging & crash recovery
-
----
-
-## License
-
-MIT License – feel free to modify and distribute!
-
----
-
-**Enjoy your games!** 🎮🚀
+[Releases](<https://github.com/ne0gl1tch20/Minigames-All-In-One>)
