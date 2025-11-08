@@ -147,14 +147,13 @@ python minigames/Game1/main.py
 ## 📌 Notes
 
 * Compatible with **Python 3.10+**
-* Works in **dev mode** or as a **PyInstaller executable**
 * Saves and settings are stored under `Documents/.mgaio/`
 * Supports hover animations, shadows, and interactive UI elements
 * Automatically ensures required libraries (`librosa`, `pygame`, `PySide6`, `numpy`) are installed
 
 ---
 
-## 🌟 Planned Future Features
+## 🌟 Planned Future Features (if it's compatible)
 
 * Search & filter games
 * Favorites / pinned games
