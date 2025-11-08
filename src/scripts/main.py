@@ -235,16 +235,21 @@ class GameCard(QFrame):
         if not os.path.exists(main_py):
             QMessageBox.warning(self, 'Launch Error', f'No main.py found in {self.meta["path"]}')
             return
+
+        # Ensure 'folder_name' exists in meta
+        folder_name = self.meta.get('folder_name') or os.path.basename(self.meta.get('path',''))
+
         # store recently played timestamp
         settings.setdefault('recently_played', {})
-        settings['recently_played'][self.meta['folder_name']] = int(time.time())
+        settings['recently_played'][folder_name] = int(time.time())
         save_settings()
+
         # run the game in a subprocess so launcher stays responsive
         try:
-            # use sys.executable to ensure same python
             os.spawnv(os.P_NOWAIT, sys.executable, [sys.executable, main_py])
         except Exception as e:
             QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
+
 
     def show_howto(self):
         txt = self.meta.get('how_to_play') or 'No instructions available.'
@@ -366,6 +371,12 @@ class Launcher(QWidget):
         self.filter_combo.currentIndexChanged.connect(self.filter_games)
         self.filter_combo.setFixedHeight(34)
         top.addWidget(self.filter_combo, stretch=0)
+        
+        self.refresh_btn = QPushButton('🔄 Refresh')
+        self.refresh_btn.setFixedHeight(34)
+        self.refresh_btn.clicked.connect(self.load_games)
+        top.addWidget(self.refresh_btn)
+
 
         self.settings_btn = QPushButton('⚙ Settings')
         self.settings_btn.clicked.connect(self.open_settings)
@@ -472,7 +483,16 @@ class Launcher(QWidget):
                     pass
 
             fresh_meta.append(meta)
-            cache_handled[folder] = {'mtime': mtime, 'meta': {k: meta[k] for k in ('title','description','how_to_play','tags') }}
+            cache_handled[folder] = {
+                'mtime': mtime,
+                'meta': {
+                    'title': meta['title'],
+                    'description': meta['description'],
+                    'how_to_play': meta['how_to_play'],
+                    'tags': meta['tags'],
+                    'folder_name': meta['folder_name']  # <- add this
+                }
+            }
 
         # write updated cache
         try:
