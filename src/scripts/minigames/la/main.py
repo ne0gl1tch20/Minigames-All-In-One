@@ -296,6 +296,7 @@ class Lalalala:
                 y, sr = librosa.load(path, sr=None)
                 # use beat tracker to get frames
                 tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+                tempo = float(tempo)
                 beat_times = librosa.frames_to_time(beat_frames, sr=sr).tolist()
                 # fallback: if no beats, try onset detection
                 if not beat_times:
