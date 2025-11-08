@@ -21,6 +21,7 @@ Author: Generated for user
 """
 
 import pygame
+import numpy as np
 import sys
 import json
 import os
@@ -298,12 +299,31 @@ class Dodge3DPixels(BaseMinigame):
         self.load_sounds()
 
     def load_sounds(self):
-        # keep sound optional (user may not have mixer)
-        try:
-            volume = (self.settings.get("volume", 80) / 100.0) if self.settings.get("sound", True) else 0
-            self.sounds["pop"] = pygame.mixer.Sound(pygame.mixer.Sound(buffer=b"")) if False else None
-        except Exception:
-            self.sounds = {}
+        """Load procedural chiptune sounds for effects"""
+        self.sounds = {}
+
+        if not self.settings.get("sound", True):
+            return  # sounds disabled
+
+        volume = self.settings.get("volume", 80) / 100.0
+
+        def make_chiptune(freq=440, duration=0.12, vol=0.5, sample_rate=44100):
+            t = np.linspace(0, duration, int(sample_rate*duration), False)
+            wave = 0.5 * np.sign(np.sin(2*np.pi*freq*t))  # square wave
+            wave = (wave * 32767 * vol).astype(np.int16)
+
+            # Convert to stereo by duplicating channel
+            stereo_wave = np.column_stack((wave, wave))
+
+            return pygame.sndarray.make_sound(stereo_wave)
+
+
+        # assign sounds
+        self.sounds["shield"] = make_chiptune(880, 0.15, volume)   # shield absorbs
+        self.sounds["shrink"] = make_chiptune(660, 0.12, volume)   # dodge while shrunk
+        self.sounds["gameover"] = make_chiptune(330, 0.25, volume) # death
+        self.sounds["powerup"] = make_chiptune(1200, 0.12, volume) # powerup collected
+        self.sounds["block_destroy"] = make_chiptune(900, 0.10, volume) # block removed
 
     # --- game lifecycle ---
     def start_play(self):
@@ -430,32 +450,32 @@ class Dodge3DPixels(BaseMinigame):
         # collisions
         player_rect = pygame.Rect(self.player_x - half, self.player_y - self.player_h/2, self.player_w * self.player_shrink, self.player_h)
         for b in list(self.blocks):
-            # approximate collision using rect
             if player_rect.colliderect(b.rect()):
-                # check detailed pixel collide by sampling
                 if self.shield_time > 0:
-                    # shield absorbs
                     self.shield_time -= 0.8
-                    if b in self.blocks:
-                        self.blocks.remove(b)
+                    if b in self.blocks: self.blocks.remove(b)
                     self.emit_particle(player_rect.centerx, player_rect.centery, color=(200,255,255), count=12)
+                    self.sounds.get("shield") and self.sounds["shield"].play()
                     continue
                 if self.shrink_time > 0:
-                    # when shrunk, chance to not hit
                     if random.random() < 0.45:
                         if b in self.blocks: self.blocks.remove(b)
                         self.emit_particle(player_rect.centerx, player_rect.centery, color=(255,255,120), count=8)
+                        self.sounds.get("shrink") and self.sounds["shrink"].play()
                         continue
-                # else gameover
+                # game over
+                self.sounds.get("gameover") and self.sounds["gameover"].play()
                 self.game_over()
                 return
 
         # player pickup powerups
+        # --- inside powerup pickup ---
         for p in list(self.powerups):
             if player_rect.colliderect(p.rect()):
                 self.apply_powerup(p.typ)
                 if p in self.powerups: self.powerups.remove(p)
                 self.emit_particle(p.x, p.y, color=(255,255,255), count=12)
+                self.sounds.get("powerup") and self.sounds["powerup"].play()
 
         # update active timers
         if self.shield_time > 0:
