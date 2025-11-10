@@ -94,6 +94,10 @@ DEFAULT_SETTINGS = {
     "lock_on_startup": False,  # default no lock on startup
     "use_pin": False,  # default password over pin
     "auto_lock": 0,  # minutes before auto-lock
+    "failed_attempts": 0,
+    "lockout_until": 0,  # Unix timestamp until which login is blocked
+    "max_attempts": 5,   # optional, max allowed attempts
+    "lockout_duration": 60  # seconds to lock after max failed attempts
 }
 
 
@@ -572,13 +576,58 @@ class SettingsDialog(QDialog):
         save_btn.clicked.connect(self.save_all)
         self.layout.addWidget(save_btn)
 
+    def password_strength(pwd):
+        if len(pwd) < 4:
+            return "Too Short", 0
+        score = 0
+
+        # Check for numbers, symbols, uppercase, lowercase
+        if re.search(r"[0-9]", pwd):
+            score += 1
+        if re.search(r"[A-Z]", pwd):
+            score += 1
+        if re.search(r"[a-z]", pwd):
+            score += 1
+        if re.search(r"[!@#$%^&*(),.?\":{}|<>]", pwd):
+            score += 1
+        if len(pwd) >= 8:
+            score += 1
+
+        # Check for simple sequences
+        sequences = ["1234", "2345", "3456", "4567", "5678", "6789", "7890",
+                    "0987", "9876", "8765", "7654", "6543", "5432", "4321"]
+        for seq in sequences:
+            if seq in pwd:
+                return "Weak (sequence)", 1
+
+        if score <= 1:
+            return "Weak", score
+        elif score == 2:
+            return "Fair", score
+        elif score == 3:
+            return "Good", score
+        elif score == 4:
+            return "Strong", score
+        else:
+            return "Stronger", score
+
     def _app_lock_section(self):
         self.add_section_label("--- 🔒 App Lock & Security ---")
+
         self.pwd_input = QLineEdit()
         self.pwd_input.setEchoMode(QLineEdit.Password)
         self.pwd_input.setText(settings.get("lock_password", ""))
         self.layout.addWidget(QLabel("Set App Lock Password:"))
         self.layout.addWidget(self.pwd_input)
+
+        self.strength_label = QLabel("Strength: ")
+        self.strength_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.layout.addWidget(self.strength_label)
+
+        # Connect input change to strength update
+        self.pwd_input.textChanged.connect(lambda: self.strength_label.setText(
+            "Strength: " + password_strength(self.pwd_input.text())[0]
+        ))
 
         self.pin_checkbox = QCheckBox("Use 4-digit PIN instead of password")
         self.pin_checkbox.setChecked(settings.get("use_pin", False))
@@ -594,6 +643,7 @@ class SettingsDialog(QDialog):
         self.auto_lock_spin.setValue(settings.get("auto_lock", 0))
         self.layout.addWidget(QLabel("Auto-lock timeout (0=disabled):"))
         self.layout.addWidget(self.auto_lock_spin)
+
 
     def _theme_section(self):
         self.add_section_label("--- 🎨 Theme & UI Customization ---")
@@ -896,6 +946,46 @@ class SettingsDialog(QDialog):
             QMessageBox.information(self, "Startup Script", f"Selected: {path}")
 
     def save_all(self):
+        password = self.pwd_input.text()
+
+        # Password validation
+        def password_strength(pwd):
+            score = 0
+            # Length check
+            if len(pwd) >= 4:
+                score += 1
+            # Number
+            if re.search(r'\d', pwd):
+                score += 1
+            # Symbol
+            if re.search(r'[!@#$%^&*(),.?":{}|<>]', pwd):
+                score += 1
+            # Sequence check (simple numeric sequences)
+            sequences = ['0123','1234','2345','3456','4567','5678','6789','7890',
+                        '9876','8765','7654','6543','5432','4321','3210','0987']
+            if any(seq in pwd for seq in sequences):
+                return "Weak", score
+            # Strength labeling
+            if score <= 1:
+                return "Weak", score
+            elif score == 2:
+                return "Fair", score
+            elif score == 3:
+                return "Good", score
+            elif score == 4:
+                return "Strong", score
+            else:
+                return "Stronger", score
+
+        strength, _ = password_strength(password)
+
+        # Only allow saving if strength is Strong or Stronger
+        if password and strength not in ["Strong", "Stronger"]:
+            QMessageBox.warning(None, "Weak Password",
+                                f"Your password is too weak: {strength}\n"
+                                "Please use at least 4 characters, include 1 number and 1 symbol, and avoid simple sequences.")
+            return  # Stop saving
+        
         password = self.pwd_input.text()
         if password:
             settings["lock_password"] = hash_password(password)
@@ -1335,11 +1425,44 @@ def verify_password(stored_password, provided_password):
 
 def app_lock():
     stored_hash = settings.get('lock_password')
-    if stored_hash:
-        text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password:', QLineEdit.Password)
-        if not ok or not verify_password(stored_hash, text):
-            QMessageBox.critical(None, 'Access Denied', 'Wrong password')
-            sys.exit(1)
+    if not stored_hash:
+        return  # no lock set
+
+    max_attempts = 5
+    lockout_duration = 60  # in seconds
+
+    # Check if currently locked
+    now = int(time.time())
+    lock_until = settings.get('lockout_until', 0)
+    if lock_until > now:
+        remaining = lock_until - now
+        QMessageBox.warning(None, "Locked Out", f"Too many wrong attempts! Try again in {remaining} seconds.")
+        sys.exit(1)
+
+    # Ask for password
+    text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password:', QLineEdit.Password)
+    if not ok:
+        sys.exit(1)
+
+    if verify_password(stored_hash, text):
+        # Correct password: reset attempts
+        settings['failed_attempts'] = 0
+        settings['lockout_until'] = 0
+        save_settings()
+        return  # allow access
+
+    # Wrong password
+    settings['failed_attempts'] = settings.get('failed_attempts', 0) + 1
+    remaining_tries = max_attempts - settings['failed_attempts']
+
+    if remaining_tries <= 0:
+        settings['lockout_until'] = now + lockout_duration
+        QMessageBox.critical(None, 'Access Denied', f"Too many wrong attempts! Locked for {lockout_duration} seconds.")
+    else:
+        QMessageBox.critical(None, 'Access Denied', f"Wrong password! {remaining_tries} tries left.")
+
+    save_settings()
+    sys.exit(1)
 
 
 # ------------------- RUN -------------------
