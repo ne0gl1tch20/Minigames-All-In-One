@@ -165,10 +165,6 @@ python minigames/Game1/main.py
 
 ---
 
-Alright, let’s brainstorm **10+ solid future features** for your MGAIO launcher/game platform — stuff that makes it feel modern, fun, and user-focused:
-
----
-
 ## 🌟 Planned Future Features
 
 1. **Cloud Backup/Restore** – Save game progress and settings to the cloud so users can play on multiple PCs. ☁️
