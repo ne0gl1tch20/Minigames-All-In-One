@@ -101,6 +101,55 @@ MGAIO/
 
 ---
 
+
+## 📏 Rules for Making a Minigame
+
+To keep MGAIO smooth, fun, and consistent, all community games must follow these rules:
+
+### 1️⃣ General Guidelines
+
+* Your game **must run offline** without requiring internet access.
+* All **assets must be included** in the game folder (images, sounds, etc.).
+* Keep your **folder and file names simple and unique**. Avoid spaces; use underscores `_` instead.
+* Avoid **external heavy dependencies**; use standard Python libraries or `pygame`/`PySide6`.
+
+### 2️⃣ Code Rules
+
+* `main.py` **must be executable** via `python main.py` inside the game folder.
+* The script **cannot modify files outside its own folder** except for designated save paths (`Documents/.mgaio/Saves`).
+* Avoid global modifications that affect the launcher or other games.
+* Use **relative paths** for all assets and save files.
+
+### 3️⃣ Launcher Integration
+
+* Include a **valid `config.json`** describing the game (title, description, how_to_play, tags, author, version, release_date).
+* Include a **launcher icon (`icon.ico`)** for easy recognition.
+* Optional: Implement a **high score / coins system** using `Documents/.mgaio/Saves/Shared/`.
+
+### 4️⃣ Content Rules
+
+* Games must be **family-friendly**: no NSFW, violence beyond cartoon/funny levels, or offensive content.
+* No malware, adware, or hidden scripts.
+* Sound effects and visuals should **not be excessively loud or flashy** to avoid discomfort.
+
+### 5️⃣ Testing
+
+* Always **test your game locally** before submitting.
+* Ensure that:
+
+  * It starts correctly via `python main.py`.
+  * All assets load properly.
+  * Save files are created and read in the proper save folder.
+  * Coins / scores work correctly if implemented.
+
+### 6️⃣ Submission Rules
+
+* Submit only **zipped folders** with `main.py`, `config.json`, `icon.ico`, and all assets.
+* Include a **short author note** or description.
+* Make sure your game is **compatible with Windows** (cross-platform optional, but test first).
+
+> ⚡ Tip: Follow these rules strictly! Games that break rules may not be accepted into MGAIO.
+
 ## 📧 Submitting Your Game
 
 We love community contributions! To submit your game:
