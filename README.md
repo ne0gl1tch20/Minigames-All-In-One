@@ -2,7 +2,7 @@
 
 **Minigames All-In-One Launcher** built with Python and PySide6. 🎮✨
 
-Organize, launch, and manage all your minigames from a single interactive application. MGAIO supports themes, game descriptions, achievements, app lock, and a polished UI experience.
+Organize, launch, and manage all your minigames from a single interactive application. MGAIO now supports **full favorites filtering**, **game saves backup/restore**, **typed reset confirmations**, and a polished UI experience.
 
 ---
 
@@ -17,6 +17,7 @@ Each minigame is displayed as an animated card with:
 * "Play" button
 * "How to Play" instructions
 * Optional version info (`version` in `config.json`)
+* ⭐ Mark/unmark as favorite, with full launcher-wide filtering
 
 ### 🎨 Theme Support
 
@@ -35,14 +36,17 @@ Secure your launcher with a password to prevent unauthorized access.
 ### ⚙️ Settings Management
 
 * Backup and restore settings via JSON
+* Full **game saves backup & restore** for all minigames in `Documents/.mgaio/Saves/`
+* Reset settings with **typed confirmation** to prevent accidental data loss
 * Track recently played games
-* Coin / mini reward system for game play
+* Coin / mini reward system for gameplay
 
 ### 📜 Resizable & Scrollable UI
 
 * Browse your games with smooth vertical scrolling
 * Animated hover effects for an interactive feel
-* Grid or list layout planned for future updates
+* Grid or list layout with adjustable columns
+* Favorites filter toggle: show only favorited games
 
 ### 🛠️ PyInstaller Ready
 
@@ -56,6 +60,13 @@ Secure your launcher with a password to prevent unauthorized access.
 * Mini reward system: earn coins per game
 * Optional in-game achievement tracking
 
+### 💾 Backup / Restore
+
+* **Backup all game saves** to a ZIP
+* **Restore all game saves** from a ZIP
+* Backup & restore launcher settings via JSON
+* Clear game cache safely
+
 ### 📷 Screenshots
 
 ![Main Window](https://github.com/ne0gl1tch20/Minigames-All-In-One/tree/main/screenshots/MainWindow.png)
@@ -67,28 +78,24 @@ Secure your launcher with a password to prevent unauthorized access.
 ## 📦 Installation
 
 1. Download through Releases page:
-- After you download through Releases page, unzip it.
 
-```link
+```text
 https://github.com/ne0gl1tch20/Minigames-All-In-One
 ```
 
-2. Download Python 3.10+:
-- You can skip this step if you already installed it.
+2. Download Python 3.10+ if needed:
 
-```link
+```text
 https://www.python.org/downloads/
 ```
 
-3. After you installed **Python**, Open **Command Prompt** and install dependencies:
-- You can skip this step if you already installed the dependencies.
+3. Install dependencies:
 
 ```bash
 pip install PySide6 pygame librosa numpy
 ```
 
 4. Run the launcher:
-- This depends on where is the script.
 
 ```bash
 python src/scripts/main.py
@@ -104,16 +111,15 @@ python src/scripts/main.py
 MGAIO/
 ├─ src/
 │  ├─ scripts/
-│  │  └─ main.py          # Launcher script
-├─ minigames/             # Each minigame folder here
+│  │  └─ main.py
+├─ minigames/
 │  ├─ Game1/
 │  │  ├─ main.py
-│  │  ├─ config.json      # Optional: title, description, how_to_play
+│  │  ├─ config.json
 │  │  └─ icon.ico
-│  └─ Game2/
 ├─ Documents/
    └─ .mgaio/
-      ├─ Saves/           # Game save files
+      ├─ Saves/           # Game save files (backed up/restored via launcher)
       ├─ settingsave.json # Launcher settings
       └─ themesave.json   # Selected theme
 ```
@@ -146,30 +152,21 @@ Optional configuration file for each minigame:
 python minigames/Game1/main.py
 ```
 
-* If a game doesn’t have `main.py`, the launcher will show a warning instead of crashing.
+* If a game doesn’t have `main.py`, the launcher shows a warning instead of crashing.
 
 ---
 
-## 📌 Notes
+## ⚠️ Danger Features
 
-* Compatible with **Python 3.10+**
-* Saves and settings are stored under `Documents/.mgaio/`
-* Supports hover animations, shadows, and interactive UI elements
-* Automatically ensures required libraries (`librosa`, `pygame`, `PySide6`, `numpy`) are installed
+* Reset to default **requires typing `RESET`** to confirm.
+* Backup & restore all saves before performing destructive actions.
+* Clear cache safely with confirmation prompts.
 
 ---
 
-## 🌟 Planned Future Features (if it's compatible)
+## 🌟 Planned Future Features
 
-* Search & filter games
-* Favorites / pinned games
-* Recently played section
-* Grid/List view toggle
-* Game stats & achievements
-* Drag-and-drop game reordering
-* Background music and UI sounds
-* Error logging & crash recovery
-* Optional EXE compilation for each game
+* Confidental!!
 
 ---
 
@@ -179,5 +176,6 @@ MIT License – free to modify and distribute.
 
 ---
 
-**Enjoy your games!** 🎮🚀
+**Enjoy your games safely!** 🎮🚀
 MGAIO – your all-in-one Python minigame launcher.
+

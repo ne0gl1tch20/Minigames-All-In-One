@@ -15,7 +15,7 @@ Run: python MGAIO_Launcher_v2_updated.py
 
 import sys
 import os, subprocess, tempfile
-import json
+import json, random
 import time
 import traceback, shutil
 from pathlib import Path
@@ -43,6 +43,8 @@ MGAIO_DIR = os.path.join(USER_DIR, "Documents", ".mgaio")
 SAVE_PATH = os.path.join(MGAIO_DIR, "Saves")
 SETTINGS_PATH = os.path.join(MGAIO_DIR, "settingsave.json")
 CACHE_PATH = os.path.join(MGAIO_DIR, "game_meta_cache.json")
+RECENTLY_PLAYED_PATH = os.path.join(MGAIO_DIR, "recently_played.json")
+
 
 os.makedirs(SAVE_PATH, exist_ok=True)
 
@@ -78,6 +80,20 @@ DEFAULT_SETTINGS = {
     "grid_columns": 3,
     "card_size": "Normal",
 }
+
+# save launched games:# Load recently played
+def load_recently_played():
+    if os.path.exists(RECENTLY_PLAYED_PATH):
+        try:
+            with open(RECENTLY_PLAYED_PATH, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_recently_played(data):
+    with open(RECENTLY_PLAYED_PATH, "w") as f:
+        json.dump(data, f, indent=2)
 
 # load settings safely
 try:
@@ -315,16 +331,17 @@ class GameCard(QFrame):
         import os
         import sys
         import time
-        import shutil
 
         main_py = os.path.join(self.meta.get('path', ''), 'main.py')
         if not os.path.exists(main_py):
-            QtWidgets.QMessageBox.warning(self, 'Launch Error', f"No main.py found in {self.meta.get('path')}")
+            QtWidgets.QMessageBox.warning(self, 'Launch Error',
+                                        f"No main.py found in {self.meta.get('path')}")
             return
 
         folder_name = self.meta.get('folder_name') or os.path.basename(self.meta.get('path', ''))
 
-        # Update settings
+        # ------------------- Update recently played -------------------
+        # 1. Update settings
         settings.setdefault('recently_played', {})[folder_name] = int(time.time())
         pc = settings.setdefault('play_counts', {})
         pc[folder_name] = pc.get(folder_name, 0) + 1
@@ -333,17 +350,34 @@ class GameCard(QFrame):
             settings['coins'] = settings.get('coins', 0) + 1
         save_settings()
 
-        # Check achievements
+        # 2. Update dedicated recently_played.json
+        try:
+            RECENTLY_PLAYED_PATH = os.path.join(MGAIO_DIR, "recently_played.json")
+            if os.path.exists(RECENTLY_PLAYED_PATH):
+                with open(RECENTLY_PLAYED_PATH, "r") as f:
+                    recent = json.load(f)
+            else:
+                recent = {}
+
+            recent[folder_name] = int(time.time())
+            with open(RECENTLY_PLAYED_PATH, "w") as f:
+                json.dump(recent, f, indent=2)
+        except Exception as e:
+            print("Failed to update recently_played.json:", e)
+
+        # ------------------- Achievements -------------------
         total_plays = sum(settings.get('play_counts', {}).values())
         if total_plays >= 1: check_unlock_achievement('first_play')
         if total_plays >= 5: check_unlock_achievement('five_plays')
         if total_plays >= 10: check_unlock_achievement('ten_plays')
 
-        # Launch Python script directly
+        # ------------------- Launch game -------------------
         try:
             subprocess.Popen([sys.executable, main_py])
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
+            QtWidgets.QMessageBox.critical(self, 'Launch Failed',
+                                        f'Failed to launch game: {e}')
+
 
 
 
@@ -840,7 +874,6 @@ class Launcher(QWidget):
             if not os.path.isdir(folder_path):
                 continue
             meta = self._load_game_meta(folder, folder_path, cache_handled)
-            # set favorite flag from settings
             meta['favorite'] = folder in settings.get('favorites', [])
             fresh_meta.append(meta)
 
@@ -850,14 +883,17 @@ class Launcher(QWidget):
         except Exception:
             pass
 
-        # Filter favorites if the toggle is ON
+        # Filter favorites if needed
         if settings.get("favorites_only", False):
             fresh_meta = [m for m in fresh_meta if m.get('favorite', False)]
 
-        # Sort games (recent first or alphabetical or favorites first)
-        fresh_meta.sort(key=self._sort_key)
+        # Load recently played
+        recently_played = load_recently_played()
 
-        self._populate_cards(fresh_meta)
+        # Sort games alphabetically for Recommended section later
+        fresh_meta.sort(key=lambda m: m.get('title', '').lower())
+        
+        self._populate_cards(fresh_meta, recently_played)
 
 
     def _clear_cards(self):
@@ -934,27 +970,78 @@ class Launcher(QWidget):
             return (0, -int(rp))
         return (1, meta.get('title', '').lower())
 
-    def _populate_cards(self, fresh_meta):
-        for meta in fresh_meta:
-            card = GameCard(meta, self)
-            card.up_btn.clicked.connect(lambda _, c=card: self.move_card_up(c))
-            card.down_btn.clicked.connect(lambda _, c=card: self.move_card_down(c))
-            self.vbox.addWidget(card)
-            self.cards.append(card)
-            self.game_meta.append({
-                'title': meta.get('title', '').lower(),
-                'desc': str(meta.get('description', '')).lower(),
-                'tags': [t.lower() for t in meta.get('tags', [])],
-                'card': card,
-                'favorite': meta.get('favorite', False),
-                'folder_name': meta.get('folder_name')
-            })
-            self.available_tags.update(meta.get('tags', []))
+    def _populate_cards(self, fresh_meta, recently_played: dict):
+        self.cards.clear()
+        self.game_meta.clear()
+        self.available_tags = set()
+        self.filter_combo.clear()
+        self.filter_combo.addItem('All')
 
+        # Clear layout first
+        while self.vbox.count():
+            w = self.vbox.takeAt(0).widget()
+            if w:
+                w.setParent(None)
+
+        # --- Recently Played Section ---
+        if recently_played:
+            rp_label = QLabel("Recently Played")
+            rp_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+            self.vbox.addWidget(rp_label)
+
+            # Sort descending by timestamp
+            sorted_rp = sorted(recently_played.items(), key=lambda x: x[1], reverse=True)
+            for folder_name, _ts in sorted_rp:
+                meta = next((m for m in fresh_meta if m['folder_name'] == folder_name), None)
+                if meta:
+                    card = GameCard(meta, self)
+                    self._connect_card_buttons(card)
+                    self.vbox.addWidget(card)
+                    self._register_card_meta(card, meta)
+
+        # --- Recommended Section (shuffle) ---
+        rec_meta = [m for m in fresh_meta if m['folder_name'] not in recently_played]
+        if rec_meta:
+            rec_label = QLabel("Recommended")
+            rec_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+            self.vbox.addWidget(rec_label)
+
+            random.shuffle(rec_meta)
+            for meta in rec_meta:
+                card = GameCard(meta, self)
+                self._connect_card_buttons(card)
+                self.vbox.addWidget(card)
+                self._register_card_meta(card, meta)
+
+        # --- No games fallback ---
+        if not fresh_meta:
+            empty_label = QLabel("Games are not found!")
+            empty_label.setFont(QFont("Segoe UI", 14, QFont.Bold))
+            empty_label.setStyleSheet("color: red;")
+            empty_label.setAlignment(Qt.AlignCenter)
+            self.vbox.addWidget(empty_label)
+
+        # Populate filter combo with tags
         for t in sorted(self.available_tags, key=str.lower):
             self.filter_combo.addItem(t)
 
         self.apply_theme_to_cards()
+        
+    def _connect_card_buttons(self, card):
+        card.up_btn.clicked.connect(lambda _, c=card: self.move_card_up(c))
+        card.down_btn.clicked.connect(lambda _, c=card: self.move_card_down(c))
+
+    def _register_card_meta(self, card, meta):
+        self.cards.append(card)
+        self.game_meta.append({
+            'title': meta.get('title', '').lower(),
+            'desc': str(meta.get('description', '')).lower(),
+            'tags': [t.lower() for t in meta.get('tags', [])],
+            'card': card,
+            'favorite': meta.get('favorite', False),
+            'folder_name': meta.get('folder_name')
+        })
+        self.available_tags.update(meta.get('tags', []))
 
     def apply_current_theme(self):
         global theme
