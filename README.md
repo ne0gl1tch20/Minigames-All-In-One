@@ -126,14 +126,17 @@ MGAIO/
 
 ## 📝 Game Card Config (`config.json`)
 
-Optional configuration file for each minigame:
+Required configuration file for each minigame:
 
 ```json
 {
-  "title": "Game Title",
-  "description": "Short game description",
-  "how_to_play": "Instructions for the player",
-  "version": "1.0.0"
+  "title": "Game title",
+  "description": "Description",
+  "how_to_play": "How to play example",
+  "tags": ["Tag 1", "Tag 2", "Tag 3"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10"
 }
 ```
 
