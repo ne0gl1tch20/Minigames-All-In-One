@@ -73,6 +73,67 @@ Secure your launcher with a password to prevent unauthorized access.
 
 ![Settings Window](https://raw.githubusercontent.com/ne0gl1tch20/Minigames-All-In-One/main/screenshots/SettingsWindow.png)
 
+## 🎮 Games Included
+
+- Number Chain
+- Coin Collector
+- Snack Stack
+- Type Rush
+- Lizard Defender
+- Clean Your Room
+- Pixel Racer
+- Color Slider
+- Flappy Bird Clone
+- Bubble Pop
+- Lalalala Game
+- Number Slider
+- Word Scramble
+- Pizza Panic
+- Dodge The Blocks
+- Ice Bath
+
+## 🚀 Future Games to Add
+
+### 🧠 Brain / Puzzle Games
+
+* Math Mania – solve puzzles under time limits
+* Word Ladder – connect words by changing one letter at a time
+* Color Maze – navigate mazes by color rules
+* Sudoku Challenge – classic sudoku with daily challenges
+* Memory Vault – advanced memory matching
+
+### 🎯 Arcade / Action Games
+
+* Space Blaster – shoot incoming aliens/obstacles
+* Jumping Jack – endless runner with platforms
+* Target Panic – hit moving targets fast
+* Speed Clicker – click as fast as possible under timer
+* Dodgeball Dash – avoid falling objects
+
+### 🥶 Funny / Weird Games
+
+* Hot Potato – pass the bomb by pressing keys
+* Cat Cafe Simulator – manage cats and orders
+* Ice Cream Rush – stack cones without dropping
+* Lizard Escape – save lizards from pests
+* Toilet Paper Challenge – stack rolls as high as possible
+
+### 🛠 Future Apps / Tools
+
+* Mini Calendar / Event Planner
+* Habit Tracker / Streaks App
+* Daily Challenges / Missions App
+* Custom Soundboard App
+* Mini Drawing / Pixel Art App
+
+## 🛠 Extra Apps
+
+- Pomodoro
+- Task Manager
+
+**💬 Game Suggestions, Questions, or Just Saying Hi?**  
+Contact me at: [`python709853@gmail.com`](mailto:python709853@gmail.com)
+
 ---
 
 ## 📦 Installation
