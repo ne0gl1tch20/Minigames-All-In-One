@@ -69,9 +69,9 @@ Secure your launcher with a password to prevent unauthorized access.
 
 ### 📷 Screenshots
 
-![Main Window](https://github.com/ne0gl1tch20/Minigames-All-In-One/tree/main/screenshots/MainWindow.png)
+![Main Window](https://raw.githubusercontent.com/ne0gl1tch20/Minigames-All-In-One/main/screenshots/MainWindow.png)
 
-![Settings Window](https://github.com/ne0gl1tch20/Minigames-All-In-One/tree/main/screenshots/SettingsWindow.png)
+![Settings Window](https://raw.githubusercontent.com/ne0gl1tch20/Minigames-All-In-One/main/screenshots/SettingsWindow.png)
 
 ---
 
