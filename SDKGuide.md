@@ -11,7 +11,7 @@ Before creating your own game, make sure to download the **Base Minigame Kit** f
 - This kit contains a **template folder**, pre-configured `main.py`, `config.json`, and a sample `icon.ico`.  
 - Using the kit ensures your game is **launcher-compatible** and helps you get started quickly.  
 
-> 📥 **Download here:** [BaseMinigameKit.zip]()
+> 📥 **Download here:** [BaseMinigameKit.zip](https://github.com/ne0gl1tch20/Minigames-All-In-One/tree/main/BaseMinigameKit/BaseMinigameKit.zip)
 
 ---
 
