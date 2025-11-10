@@ -101,6 +101,75 @@ MGAIO/
 
 ---
 
+## 🎨 Designing Your Game
+
+* **Keep it simple:** Short, focused gameplay works best in MGAIO.
+* **Visual clarity:** Ensure buttons, sprites, and text are easy to see.
+* **Consistent theme:** Colors, fonts, and UI elements should match your game style.
+* **Accessible controls:** Use intuitive keyboard and/or mouse input.
+
+---
+
+## 🔊 Adding Sound & Music
+
+* Place all sound effects and music **inside your minigame folder**.
+* Load audio using **relative paths**, e.g.,
+
+  ```python
+  sound = pygame.mixer.Sound("click.wav")
+  ```
+* Keep sounds **short and non-intrusive**.
+* Optional: implement a **toggle sound** feature in-game.
+
+---
+
+## 💾 Saving Progress
+
+* Follow the launcher’s save structure:
+
+  * **Local:** `Documents/.mgaio/Saves/GameName/`
+  * **Shared:** `Documents/.mgaio/Saves/Shared/`
+* Use **JSON** for storing player progress.
+* Never write outside your minigame folder or the designated save paths.
+
+---
+
+## 🕹 Game Loop Tips
+
+* Maintain a **stable frame rate** (30–60 FPS recommended).
+* Avoid blocking calls; prefer **timers or events** to keep UI responsive.
+* Use **event-driven logic** instead of infinite loops when possible.
+
+---
+
+## 🧪 Debugging & Testing
+
+* Run `python main.py` multiple times to catch crashes.
+* Test all features: gameplay, save/load, coins, sounds, and settings.
+* Verify **path independence**: move the folder to another directory and ensure it still works.
+
+---
+
+## 🌐 Optional Features
+
+* **Leaderboard support:** Store high scores or coins in the Shared stats JSON.
+* **Achievements:** Implement unlockable milestones saved in JSON.
+* **Settings menu:** Allow players to toggle sound, difficulty, or themes.
+
+---
+
+## 💡 Pro Tips
+
+* Name sprites, sounds, and variables **clearly**.
+* Comment your code for **future reference**.
+* Design your game for **short sessions** (1–5 minutes) for quick play.
+* Avoid hardcoding paths; always use:
+
+  ```python
+  Path(__file__).parent
+  ```
+
+  for assets and saves.
 
 ## 📏 Rules for Making a Minigame
 
