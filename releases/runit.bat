@@ -35,7 +35,7 @@ python -m pip install --upgrade pip
 
 :: ---------------- Install essential libraries ----------------
 echo Installing essential libraries...
-python -m pip install --upgrade pygame librosa PySide6 numpy
+python -m pip install --upgrade pygame librosa PySide6 numpy pycryptodome
 
 :: ---------------- Navigate to scripts folder ----------------
 cd scripts

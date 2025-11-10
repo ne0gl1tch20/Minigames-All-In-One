@@ -47,8 +47,13 @@ Minigames All-In-One Launcher (MGAIO) is an **offline launcher for Python-based 
 
 ### 🛠 Extra Apps
 
-- Pomodoro  
-- Task Manager  
+* Pomodoro ⏱️
+* Task Manager 📝
+* Eye Strain / 20-20-20 Reminder 👀
+* Stretch / Micro Stretch 🧘
+* Micro Meditate 🧘‍♂️
+* Hydrate 💧
+* Breathe 💨
 
 ---
 
@@ -98,7 +103,7 @@ git clone https://github.com/ne0gl1tch20/Minigames-All-In-One.git
 runit.bat
 ```
 
-* Dependencies installed automatically: `pygame`, `librosa`, `PySide6`, `numpy`
+* Dependencies installed automatically
 * Python 3.12 is recommended if not installed
 
 3. **Launch MGAIO**:

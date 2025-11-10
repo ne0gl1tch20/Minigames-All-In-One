@@ -6,7 +6,7 @@
 #         \/        \/         \/            \/          \/    \/           \/     \/     \/     \/       
 #                                           Made by G0ldNe0!
 
-LAUNCHER_VERSION = "v0.2.0-prerelease"
+LAUNCHER_VERSION = "v0.2.5-prerelease"
 
 # Standard library imports
 import sys                 # Access to system-specific parameters and functions
@@ -18,6 +18,11 @@ from pathlib import Path   # Object-oriented filesystem paths
 from typing import List, Dict  # Type hints for lists and dictionaries
 from zipfile import ZipFile, ZIP_DEFLATED  # Handle ZIP archives
 import importlib.util       # Dynamic import of modules by file path
+import hashlib  # provides secure hashing functions (we use PBKDF2 for passwords)
+import binascii  # for converting binary data to hex strings and back
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+import base64
 
 # PySide6 imports for GUI
 from PySide6.QtWidgets import (  
@@ -76,9 +81,23 @@ DEFAULT_SETTINGS = {
     "view_mode": "Grid",
     "grid_columns": 3,
     "card_size": "Normal",
+    "daily_challenges": True,
+    "easter_eggs": True,
+    "particles": True,
+    "sound_effects": True,
+    "notifications": True,
+    "font": {"family": "Segoe UI", "size": 11},  # default font
+    "theme_colors": {"bg": "#FFFFFF", "fg": "#000000", "accent": "#0078D7"},  # light theme default
+    "startup_script": "",  # path to optional custom startup script
+    "auto_sort": "Alphabetical",  # default sorting method
+    "compact_mode": False,  # default compact mode off
+    "lock_on_startup": False,  # default no lock on startup
+    "use_pin": False,  # default password over pin
+    "auto_lock": 0,  # minutes before auto-lock
 }
 
-# save launched games:# Load recently played
+
+
 def load_recently_played():
     if os.path.exists(RECENTLY_PLAYED_PATH):
         try:
@@ -118,6 +137,23 @@ theme = themes.get(settings.get('theme', 'default'), themes['default'])
 
 # ------------------- UTILITIES -------------------
 
+def encrypt_json(data: dict, password: str) -> str:
+    """Encrypt JSON dict using AES with password."""
+    raw = json.dumps(data).encode('utf-8')
+    key = password.encode('utf-8').ljust(32, b'\0')[:32]  # 32-byte key
+    cipher = AES.new(key, AES.MODE_EAX)
+    ciphertext, tag = cipher.encrypt_and_digest(raw)
+    return base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
+
+def decrypt_json(enc_text: str, password: str) -> dict:
+    """Decrypt AES-encrypted JSON string."""
+    data = base64.b64decode(enc_text)
+    key = password.encode('utf-8').ljust(32, b'\0')[:32]
+    nonce, tag, ciphertext = data[:16], data[16:32], data[32:]
+    cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
+    raw = cipher.decrypt_and_verify(ciphertext, tag)
+    return json.loads(raw)
+
 def save_settings():
     try:
         os.makedirs(os.path.dirname(SETTINGS_PATH), exist_ok=True)
@@ -125,7 +161,6 @@ def save_settings():
             json.dump(settings, f, indent=2)
     except Exception as e:
         print('Failed to save settings:', e)
-
 
 def safe_load_json(path):
     try:
@@ -190,6 +225,26 @@ class GameCard(QFrame):
 
         self.setLayout(layout)
 
+    def update_layout_view(self, view_mode: str):
+        """Update card layout depending on Grid or List view."""
+        self.current_view = view_mode
+        compact = settings.get("compact_mode", False)
+
+        if view_mode == "Grid":
+            # Smaller, stacked layout
+            self.setMaximumHeight(180 if not compact else 100)
+            self.desc_label.setVisible(not compact)
+            self.howto_btn.setVisible(not compact)
+            self.title_label.setAlignment(Qt.AlignCenter)
+        else:
+            # List mode: horizontal full info
+            self.setMaximumHeight(220 if not compact else 120)
+            self.desc_label.setVisible(True)
+            self.howto_btn.setVisible(True)
+            self.title_label.setAlignment(Qt.AlignLeft)
+        
+        self.update()
+
     def _add_icon(self, parent_layout):
         self.icon_label = QLabel()
         self.icon_label.setFixedSize(56, 56)
@@ -217,6 +272,32 @@ class GameCard(QFrame):
 
         parent_layout.addLayout(text_layout, stretch=1)
 
+    def update_ui(self):
+        """Update card according to current launcher settings."""
+        # Theme
+        self.apply_theme()
+        
+        # Favorites filter
+        folder = self.meta.get("folder_name")
+        if settings.get("favorites_only", False) and folder not in settings.get("favorites", []):
+            self.hide()
+        else:
+            self.show()
+        
+        # Compact mode
+        compact = settings.get("compact_mode", False)
+        self.setMaximumHeight(100 if compact else 200)
+        self.desc_label.setVisible(not compact)
+        self.howto_btn.setVisible(not compact)
+        
+        # Card size
+        size = settings.get("card_size", "Normal")
+        if size == "Mini":
+            self.setFixedHeight(100)
+        elif size == "Normal":
+            self.setFixedHeight(140)
+        else:  # Large
+            self.setFixedHeight(180)
 
     def _add_meta_info(self, parent_layout):
         """Shows author, version, and release date below the description."""
@@ -530,32 +611,71 @@ class SettingsDialog(QDialog):
         self.font_btn = QPushButton("Pick Font")
         self.font_btn.clicked.connect(self.pick_font)
         self.layout.addWidget(self.font_btn)
+        
+        
+        # Import / Export theme buttons
+        self.import_theme_btn = QPushButton("Import Theme")
+        self.import_theme_btn.clicked.connect(self.import_theme)
+        self.layout.addWidget(self.import_theme_btn)
+
+        self.export_theme_btn = QPushButton("Export Theme")
+        self.export_theme_btn.clicked.connect(self.export_theme)
+        self.layout.addWidget(self.export_theme_btn)
+
+    def import_theme(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Import Theme JSON", "", "JSON Files (*.json)")
+        if not path:
+            return
+
+        password, ok = QInputDialog.getText(self, "Password (optional)", "Enter password if encrypted:", QLineEdit.Normal)
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                text = f.read()
+                if ok and password:
+                    data = decrypt_json(text, password)
+                else:
+                    data = json.loads(text)
+
+            if 'name' in data and 'bg' in data and 'fg' in data:
+                themes[data['name']] = data
+                QMessageBox.information(self, "Theme Imported", f"Theme '{data['name']}' added!")
+            else:
+                QMessageBox.warning(self, "Error", "Invalid theme file!")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to import theme:\n{e}")
+
+    def export_theme(self):
+        current_theme_name = settings.get("theme", "default")
+        if current_theme_name not in themes:
+            QMessageBox.warning(self, "Export Theme", "Current theme not found!")
+            return
+
+        path, _ = QFileDialog.getSaveFileName(self, "Export Theme JSON", "", "JSON Files (*.json)")
+        if not path:
+            return
+
+        password, ok = QInputDialog.getText(self, "Password (optional)", "Enter password to encrypt (leave blank for none):", QLineEdit.Normal)
+        try:
+            data = themes[current_theme_name]
+            if ok and password:
+                out_text = encrypt_json(data, password)
+            else:
+                out_text = json.dumps(data, indent=2)
+
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(out_text)
+
+            QMessageBox.information(self, "Theme Exported", f"Theme '{current_theme_name}' exported successfully!")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to export theme:\n{e}")
 
 
     def _launcher_layout_section(self):
         self.add_section_label("--- 🖥️ Launcher Layout & Behavior ---")
 
-        self.view_toggle = QComboBox()
-        self.view_toggle.addItems(["Grid", "List"])
-        self.view_toggle.setCurrentText(settings.get("view_mode", "Grid"))
-        self.layout.addWidget(QLabel("Launcher View Mode:"))
-        self.layout.addWidget(self.view_toggle)
-
-        self.columns_spin = QSpinBox()
-        self.columns_spin.setRange(1, 10)
-        self.columns_spin.setValue(settings.get("grid_columns", 3))
-        self.layout.addWidget(QLabel("Grid Columns:"))
-        self.layout.addWidget(self.columns_spin)
-
-        self.compact_mode_toggle = QCheckBox("Enable Compact Mode")
-        self.compact_mode_toggle.setChecked(settings.get("compact_mode", False))
-        self.layout.addWidget(self.compact_mode_toggle)
-
-        self.card_size_combo = QComboBox()
-        self.card_size_combo.addItems(["Mini", "Normal", "Large"])
-        self.card_size_combo.setCurrentText(settings.get("card_size", "Normal"))
-        self.layout.addWidget(QLabel("Card Size:"))
-        self.layout.addWidget(self.card_size_combo)
+        self.a_toggle = QCheckBox("OMG THERES NOTHING HEREE")
+        self.layout.addWidget(self.a_toggle)
 
     def _game_management_section(self):
         self.add_section_label("--- 🎮 Game Management ---")
@@ -651,18 +771,43 @@ class SettingsDialog(QDialog):
         self.layout.addWidget(self.custom_script_btn)
 
     def _fun_section(self):
-        self.add_section_label("--- 🎉 Fun / Gamification ---")
-        toggles = [("Enable Daily Challenges", "daily_challenges"),
-                   ("Enable Mini Rewards", "mini_rewards"),
-                   ("Enable Easter Eggs", "easter_eggs")]
+        toggles = [
+            ("Enable Daily Challenges", "daily_challenges"),
+            ("Enable Mini Rewards", "mini_rewards"),
+            ("Enable Particles", "particles"),
+            ("Enable Sound Effects", "sound_effects"),
+            ("Enable Notifications", "notifications"),
+            ("Enable Achievements Panel", "achievements_panel"),
+            ("Enable Easter Eggs", "easter_eggs")
+        ]
+
         for text, key in toggles:
             cb = QCheckBox(text)
             cb.setChecked(settings.get(key, True))
             setattr(self, f"{key}_toggle", cb)
             self.layout.addWidget(cb)
 
-        # show coin balance
-        self.layout.addWidget(QLabel(f"Coins: {settings.get('coins',0)}"))
+
+        # Example: when user clicks the coin label in settings
+        coins_label = QLabel(f"Coins: {settings.get('coins', 0)}")
+        coins_label.mousePressEvent = lambda e: self.trigger_easter_egg()
+        self.layout.addWidget(coins_label)
+
+
+    def trigger_easter_egg(self):
+        if not settings.get("easter_eggs", True):
+            return  # Easter eggs are disabled
+
+        # Fun popup with a random message or image
+        messages = [
+            "🎉 Surprise! You found an Easter Egg!",
+            "🥚 Crack the code, win a cookie!",
+            "🦎 Lizard is watching you...",
+            "✨ Magic mode activated!"
+        ]
+        msg = random.choice(messages)
+        QMessageBox.information(self, "Easter Egg", msg)
+
 
     def add_section_label(self, text):
         lbl = QLabel(text)
@@ -751,15 +896,15 @@ class SettingsDialog(QDialog):
             QMessageBox.information(self, "Startup Script", f"Selected: {path}")
 
     def save_all(self):
-        settings["lock_password"] = self.pwd_input.text()
+        password = self.pwd_input.text()
+        if password:
+            settings["lock_password"] = hash_password(password)
+        else:
+            settings["lock_password"] = ""  # no password set
+
         settings["use_pin"] = self.pin_checkbox.isChecked()
         settings["lock_on_startup"] = self.lock_on_startup.isChecked()
         settings["auto_lock"] = self.auto_lock_spin.value()
-
-        settings["view_mode"] = self.view_toggle.currentText()
-        settings["grid_columns"] = self.columns_spin.value()
-        settings["compact_mode"] = self.compact_mode_toggle.isChecked()
-        settings["card_size"] = self.card_size_combo.currentText()
 
         settings["favorites_only"] = self.favorites_toggle.isChecked()
         settings["auto_sort"] = self.auto_sort_combo.currentText()
@@ -767,9 +912,9 @@ class SettingsDialog(QDialog):
         for key in ["particles", "sound_effects", "notifications", "achievements_panel",
                     "daily_challenges", "mini_rewards", "easter_eggs"]:
             settings[key] = getattr(self, f"{key}_toggle").isChecked()
-
         save_settings()
         QMessageBox.information(self, "Settings", "All settings saved!")
+        # Reload games/cards in new view
         if hasattr(self.parent(), 'load_games'):
             self.parent().load_games()
         self.accept()
@@ -799,6 +944,35 @@ class Launcher(QWidget):
 
         self.load_games()
         self._restore_geometry()
+        self._easter_code = [Qt.Key_Up, Qt.Key_Up, Qt.Key_Down, Qt.Key_Down,
+                             Qt.Key_Left, Qt.Key_Right, Qt.Key_Left, Qt.Key_Right,
+                             Qt.Key_B, Qt.Key_A]
+        self._current_code = []
+
+    def keyPressEvent(self, event):
+        self._current_code.append(event.key())
+        if self._current_code[-len(self._easter_code):] == self._easter_code:
+            self.trigger_easter_egg()
+            self._current_code.clear()
+        elif len(self._current_code) > len(self._easter_code):
+            self._current_code.pop(0)
+
+    def trigger_easter_egg(self):
+        QMessageBox.information(self, "🎉 Secret Unlocked!", "You found the hidden game! 🕹️")
+        
+    def validate_cache(self):
+        cache = safe_load_json(CACHE_PATH) or {'handled': {}, 'meta': []}
+        valid_folders = set(os.listdir(MINIGAMES_DIR))
+        removed = []
+        for folder in list(cache['handled'].keys()):
+            if folder not in valid_folders:
+                del cache['handled'][folder]
+                removed.append(folder)
+        if removed:
+            with open(CACHE_PATH, 'w', encoding='utf-8') as f:
+                json.dump(cache, f, indent=2)
+        return removed
+            
 
     def _init_top_bar(self, parent_layout):
         top_bar = QHBoxLayout()
@@ -862,6 +1036,12 @@ class Launcher(QWidget):
 
     def load_games(self):
         self._clear_cards()
+
+        # --- validate cache first ---
+        removed = self.validate_cache()
+        if removed:
+            print(f"Removed missing/deleted games from cache: {removed}")  # optional, for debug/log
+
         cache = safe_load_json(CACHE_PATH) or {'handled': {}, 'meta': []}
         cache_handled = cache.get('handled', {})
         fresh_meta = []
@@ -873,6 +1053,9 @@ class Launcher(QWidget):
             meta = self._load_game_meta(folder, folder_path, cache_handled)
             meta['favorite'] = folder in settings.get('favorites', [])
             fresh_meta.append(meta)
+
+        for card in self.cards:  # assuming you store references to your GameCard instances
+            card.update_ui()
 
         try:
             with open(CACHE_PATH, 'w', encoding='utf-8') as f:
@@ -889,8 +1072,9 @@ class Launcher(QWidget):
 
         # Sort games alphabetically for Recommended section later
         fresh_meta.sort(key=lambda m: m.get('title', '').lower())
-        
+
         self._populate_cards(fresh_meta, recently_played)
+
 
 
     def _clear_cards(self):
@@ -1006,6 +1190,8 @@ class Launcher(QWidget):
             random.shuffle(rec_meta)
             for meta in rec_meta:
                 card = GameCard(meta, self)
+                card.update_layout_view(settings.get("view_mode", "Grid"))
+
                 self._connect_card_buttons(card)
                 self.vbox.addWidget(card)
                 self._register_card_meta(card, meta)
@@ -1133,14 +1319,28 @@ class Launcher(QWidget):
         dlg.exec()
 
 # ------------------- APP LOCK -------------------
+def hash_password(password, salt=None):
+    """Hash password using PBKDF2 with SHA256"""
+    if not salt:
+        salt = os.urandom(16)  # generate 16-byte random salt
+    pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100_000)
+    return binascii.hexlify(salt).decode() + ":" + binascii.hexlify(pwdhash).decode()
+
+def verify_password(stored_password, provided_password):
+    """Verify a stored password against one provided"""
+    salt_hex, pwdhash_hex = stored_password.split(":")
+    salt = binascii.unhexlify(salt_hex)
+    new_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100_000)
+    return binascii.hexlify(new_hash).decode() == pwdhash_hex
 
 def app_lock():
-    pwd = settings.get('lock_password')
-    if pwd:
+    stored_hash = settings.get('lock_password')
+    if stored_hash:
         text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password:', QLineEdit.Password)
-        if not ok or text != pwd:
+        if not ok or not verify_password(stored_hash, text):
             QMessageBox.critical(None, 'Access Denied', 'Wrong password')
             sys.exit(1)
+
 
 # ------------------- RUN -------------------
 if __name__ == '__main__':
