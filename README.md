@@ -131,8 +131,8 @@ Secure your launcher with a password to prevent unauthorized access.
 * Custom Soundboard App
 * Mini Drawing / Pixel Art App
 
-**💬 Have Game Suggestions, Questions, or Just Want to Say Hi?**  
-Use our dedicated suggestions email: [`python709853@gmail.com`](mailto:python709853@gmail.com)  
+## 💬 Have Game Suggestions, Questions, or Just Want to Say Hi?
+* Use our dedicated suggestions email: [`python709853@gmail.com`](mailto:python709853@gmail.com)  
 *(Your personal email stays private and untouched.)*
 ---
 
