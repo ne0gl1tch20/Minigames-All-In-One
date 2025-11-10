@@ -22,7 +22,7 @@ import hashlib  # provides secure hashing functions (we use PBKDF2 for passwords
 import binascii  # for converting binary data to hex strings and back
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
-import base64
+import base64, re # encode and decode text, regular expressions
 
 # PySide6 imports for GUI
 from PySide6.QtWidgets import (  
@@ -140,6 +140,40 @@ themes = {
 theme = themes.get(settings.get('theme', 'default'), themes['default'])
 
 # ------------------- UTILITIES -------------------
+
+def password_strength(pwd: str):
+    if not pwd:
+        return "Empty", 0
+    score = 0
+    # PIN detection (only digits, length 4–6)
+    if pwd.isdigit():
+        if len(pwd) == 4:
+            return "Fair (PIN)", 2
+        elif len(pwd) >= 6:
+            return "Good (PIN)", 3
+
+    # Regular password rules
+    if len(pwd) >= 4:
+        score += 1
+    if re.search(r'\d', pwd):
+        score += 1
+    if re.search(r'[!@#$%^&*(),.?":{}|<>]', pwd):
+        score += 1
+    sequences = ['0123','1234','2345','3456','4567','5678','6789','7890',
+                 '9876','8765','7654','6543','5432','4321','3210','0987']
+    if any(seq in pwd for seq in sequences):
+        return "Weak", score
+    if score <= 1:
+        return "Weak", score
+    elif score == 2:
+        return "Fair", score
+    elif score == 3:
+        return "Good", score
+    elif score == 4:
+        return "Strong", score
+    else:
+        return "Stronger", score
+
 
 def encrypt_json(data: dict, password: str) -> str:
     """Encrypt JSON dict using AES with password."""
@@ -576,75 +610,6 @@ class SettingsDialog(QDialog):
         save_btn.clicked.connect(self.save_all)
         self.layout.addWidget(save_btn)
 
-    def password_strength(pwd):
-        if len(pwd) < 4:
-            return "Too Short", 0
-        score = 0
-
-        # Check for numbers, symbols, uppercase, lowercase
-        if re.search(r"[0-9]", pwd):
-            score += 1
-        if re.search(r"[A-Z]", pwd):
-            score += 1
-        if re.search(r"[a-z]", pwd):
-            score += 1
-        if re.search(r"[!@#$%^&*(),.?\":{}|<>]", pwd):
-            score += 1
-        if len(pwd) >= 8:
-            score += 1
-
-        # Check for simple sequences
-        sequences = ["1234", "2345", "3456", "4567", "5678", "6789", "7890",
-                    "0987", "9876", "8765", "7654", "6543", "5432", "4321"]
-        for seq in sequences:
-            if seq in pwd:
-                return "Weak (sequence)", 1
-
-        if score <= 1:
-            return "Weak", score
-        elif score == 2:
-            return "Fair", score
-        elif score == 3:
-            return "Good", score
-        elif score == 4:
-            return "Strong", score
-        else:
-            return "Stronger", score
-
-    def _app_lock_section(self):
-        self.add_section_label("--- 🔒 App Lock & Security ---")
-
-        self.pwd_input = QLineEdit()
-        self.pwd_input.setEchoMode(QLineEdit.Password)
-        self.pwd_input.setText(settings.get("lock_password", ""))
-        self.layout.addWidget(QLabel("Set App Lock Password:"))
-        self.layout.addWidget(self.pwd_input)
-
-        self.strength_label = QLabel("Strength: ")
-        self.strength_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.layout.addWidget(self.strength_label)
-
-        # Connect input change to strength update
-        self.pwd_input.textChanged.connect(lambda: self.strength_label.setText(
-            "Strength: " + password_strength(self.pwd_input.text())[0]
-        ))
-
-        self.pin_checkbox = QCheckBox("Use 4-digit PIN instead of password")
-        self.pin_checkbox.setChecked(settings.get("use_pin", False))
-        self.layout.addWidget(self.pin_checkbox)
-
-        self.lock_on_startup = QCheckBox("Lock on startup")
-        self.lock_on_startup.setChecked(settings.get("lock_on_startup", False))
-        self.layout.addWidget(self.lock_on_startup)
-
-        self.auto_lock_spin = QSpinBox()
-        self.auto_lock_spin.setRange(0, 120)
-        self.auto_lock_spin.setSuffix(" min")
-        self.auto_lock_spin.setValue(settings.get("auto_lock", 0))
-        self.layout.addWidget(QLabel("Auto-lock timeout (0=disabled):"))
-        self.layout.addWidget(self.auto_lock_spin)
-
-
     def _theme_section(self):
         self.add_section_label("--- 🎨 Theme & UI Customization ---")
         self.layout.addWidget(QLabel("Theme Presets:"))
@@ -804,6 +769,39 @@ class SettingsDialog(QDialog):
                     self.parent().load_games()
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to clear cache:\n{e}")
+                
+    def _app_lock_section(self):
+        self.add_section_label("--- 🔒 App Lock & Security ---")
+
+        self.pwd_input = QLineEdit()
+        self.pwd_input.setEchoMode(QLineEdit.Password)
+        self.pwd_input.setText(settings.get("lock_password", ""))
+        self.layout.addWidget(QLabel("Set App Lock Password or PIN:"))
+        self.layout.addWidget(self.pwd_input)
+
+        self.strength_label = QLabel("Strength: ")
+        self.strength_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.layout.addWidget(self.strength_label)
+
+        # Update strength dynamically
+        self.pwd_input.textChanged.connect(lambda: self.strength_label.setText(
+            "Strength: " + password_strength(self.pwd_input.text())[0]
+        ))
+
+        self.pin_checkbox = QCheckBox("Use 4-digit PIN instead of password")
+        self.pin_checkbox.setChecked(settings.get("use_pin", False))
+        self.layout.addWidget(self.pin_checkbox)
+
+        self.lock_on_startup = QCheckBox("Lock on startup")
+        self.lock_on_startup.setChecked(settings.get("lock_on_startup", False))
+        self.layout.addWidget(self.lock_on_startup)
+
+        self.auto_lock_spin = QSpinBox()
+        self.auto_lock_spin.setRange(0, 120)
+        self.auto_lock_spin.setSuffix(" min")
+        self.auto_lock_spin.setValue(settings.get("auto_lock", 0))
+        self.layout.addWidget(QLabel("Auto-lock timeout (0=disabled):"))
+        self.layout.addWidget(self.auto_lock_spin)
 
     def _backup_restore_section(self):
         self.add_section_label("💾 Backup / Restore")
@@ -946,26 +944,24 @@ class SettingsDialog(QDialog):
             QMessageBox.information(self, "Startup Script", f"Selected: {path}")
 
     def save_all(self):
-        password = self.pwd_input.text()
+        password = self.pwd_input.text().strip()
+        use_pin = self.pin_checkbox.isChecked()
 
-        # Password validation
+        # --- Password & PIN validation ---
         def password_strength(pwd):
             score = 0
-            # Length check
             if len(pwd) >= 4:
                 score += 1
-            # Number
             if re.search(r'\d', pwd):
                 score += 1
-            # Symbol
             if re.search(r'[!@#$%^&*(),.?":{}|<>]', pwd):
                 score += 1
-            # Sequence check (simple numeric sequences)
+            # Detect simple sequences
             sequences = ['0123','1234','2345','3456','4567','5678','6789','7890',
                         '9876','8765','7654','6543','5432','4321','3210','0987']
             if any(seq in pwd for seq in sequences):
-                return "Weak", score
-            # Strength labeling
+                return "Weak (sequence)", score
+
             if score <= 1:
                 return "Weak", score
             elif score == 2:
@@ -977,22 +973,32 @@ class SettingsDialog(QDialog):
             else:
                 return "Stronger", score
 
-        strength, _ = password_strength(password)
-
-        # Only allow saving if strength is Strong or Stronger
-        if password and strength not in ["Strong", "Stronger"]:
-            QMessageBox.warning(None, "Weak Password",
-                                f"Your password is too weak: {strength}\n"
-                                "Please use at least 4 characters, include 1 number and 1 symbol, and avoid simple sequences.")
-            return  # Stop saving
-        
-        password = self.pwd_input.text()
-        if password:
+        # --- PIN mode ---
+        if use_pin:
+            if not password.isdigit() or len(password) != 4:
+                QMessageBox.warning(
+                    None, "Invalid PIN",
+                    "Your PIN must be exactly 4 digits (0–9 only)."
+                )
+                return
             settings["lock_password"] = hash_password(password)
+            settings["use_pin"] = True
         else:
-            settings["lock_password"] = ""  # no password set
-
-        settings["use_pin"] = self.pin_checkbox.isChecked()
+            # --- Password mode ---
+            if password:
+                strength, _ = password_strength(password)
+                if strength not in ["Strong", "Stronger"]:
+                    QMessageBox.warning(
+                        None, "Weak Password",
+                        f"Your password is too weak: {strength}\n"
+                        "Please use at least 4 characters, include 1 number and 1 symbol, and avoid simple sequences."
+                    )
+                    return
+                settings["lock_password"] = hash_password(password)
+            else:
+                settings["lock_password"] = ""  # no password set
+            settings["use_pin"] = False
+        
         settings["lock_on_startup"] = self.lock_on_startup.isChecked()
         settings["auto_lock"] = self.auto_lock_spin.value()
 
@@ -1440,7 +1446,7 @@ def app_lock():
         sys.exit(1)
 
     # Ask for password
-    text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password:', QLineEdit.Password)
+    text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password/pin:', QLineEdit.Password)
     if not ok:
         sys.exit(1)
 
