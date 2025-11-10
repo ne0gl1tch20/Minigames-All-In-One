@@ -139,6 +139,46 @@ Use our dedicated suggestions email (keeps personal inbox untouched): [`python70
 
 ---
 
+## 💡 Tips & Tricks
+
+Make the most out of your Minigames All-In-One Launcher with these handy tips:
+
+### 🎮 Game Cards
+- **Launch Quickly:** Click the game icon or “Play” button to start instantly.  
+- **Favorites:** Click the heart ❤️ on a game card to add it to your favorites section for quick access.  
+- **Ordering:** Use the up/down arrows on the game cards to arrange them to your liking.
+
+### 🕒 Recently Played
+- **Track Your Progress:** The “Recently Played” section shows the last few games you opened. Perfect if you switch between multiple games.  
+- **Quick Relaunch:** Click a game in this section to jump straight back into your last session.
+
+### 🌟 Recommended Games
+- **Discover New Fun:** This section shuffles your games randomly to suggest what to play next.  
+- **Try Everything:** Keep the fun fresh by letting the launcher recommend games you haven’t played in a while.
+
+### 🎨 Themes & UI
+- **Customize Appearance:** Change themes and colors in the Settings window to suit your mood.  
+- **Light & Dark Modes:** Switch between light and dark themes for day or night gaming.
+
+### 💾 Save & Restore
+- **Never Lose Progress:** Your game saves are stored in `Documents/.mgaio/Saves`. Each game’s progress is kept separately.  
+- **Backup Your Saves:** Copy the Saves folder if you want to transfer your progress to another PC.
+
+### ⚙️ Settings
+- **Batch Installer:** Use `runit.bat` to quickly install Python & dependencies.  
+- **Adjust Game Volume:** Individual minigames may have sound settings in the config.json file.  
+- **Launcher Settings:** Modify themes, recent/recommended game display, and other launcher preferences via `settingsave.json`.
+
+### 🏆 Achievements & Rewards
+- **Earn Coins & Badges:** Many minigames have mini-rewards. Check each game’s instructions for ways to earn them.  
+- **Track Your Progress:** Achievements may unlock special items or features in future updates.
+
+---
+
+**Pro Tip:** Combine “Favorites” with “Recently Played” to quickly access your top games without scrolling endlessly. 🎮
+
+---
+
 ## ⚡ License
 
 MIT License – See [LICENSE](LICENSE) for details.
