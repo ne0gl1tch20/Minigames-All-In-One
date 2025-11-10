@@ -4,3 +4,4 @@ pyinstaller ^
  --add-data "scripts;scripts" ^
  --icon=data/icon.ico ^
  scripts/main.py
+i dont wanna compile
