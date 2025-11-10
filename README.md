@@ -92,6 +92,11 @@ Secure your launcher with a password to prevent unauthorized access.
 - Dodge The Blocks
 - Ice Bath
 
+## 🛠 Extra Apps
+
+- Pomodoro
+- Task Manager
+
 ## 🚀 Future Games to Add
 
 ### 🧠 Brain / Puzzle Games
@@ -125,11 +130,6 @@ Secure your launcher with a password to prevent unauthorized access.
 * Daily Challenges / Missions App
 * Custom Soundboard App
 * Mini Drawing / Pixel Art App
-
-## 🛠 Extra Apps
-
-- Pomodoro
-- Task Manager
 
 **💬 Have Game Suggestions, Questions, or Just Want to Say Hi?**  
 Use our dedicated suggestions email: [`python709853@gmail.com`](mailto:python709853@gmail.com)  
