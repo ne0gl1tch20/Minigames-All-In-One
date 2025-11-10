@@ -165,9 +165,27 @@ python minigames/Game1/main.py
 
 ---
 
+Alright, let’s brainstorm **10+ solid future features** for your MGAIO launcher/game platform — stuff that makes it feel modern, fun, and user-focused:
+
+---
+
 ## 🌟 Planned Future Features
 
-* Confidental!!
+1. **Cloud Backup/Restore** – Save game progress and settings to the cloud so users can play on multiple PCs. ☁️
+2. **Achievements & Badges Expansion** – Add more achievements, daily/weekly challenges, and collectible badges. 🏆
+3. **Leaderboard System** – Global and local leaderboards per minigame. 🥇
+4. **Customizable Themes** – Dark, light, neon, and seasonal themes, plus user-uploadable themes. 🎨
+5. **Dynamic “Recommended” Section** – AI or algorithm-driven suggestions based on play history and favorites. 🤖
+6. **Mini-game Updates via Launcher** – Check for updates for individual minigames without reinstalling everything. 🔄
+7. **Offline Multiplayer/Co-op Minigames** – Hotseat, LAN, or local network co-op games. 👯‍♂️
+8. **Enhanced Sound & Music Options** – Per-game background music, volume control, and SFX toggles. 🎵
+9. **Drag-and-Drop Reordering** – Reorder your minigames in the launcher via drag-and-drop. 🖱️
+10. **Daily/Weekly Rewards System** – Coins, unlockable themes, or mini-rewards for logging in and playing. 💰
+11. **Advanced Search & Filters** – Search by multiple tags, favorites, recently played, difficulty, or genre. 🔍
+12. **In-Launcher Tutorials/Guides** – Quick interactive tutorials or walkthroughs for each minigame. 📖
+13. **Auto-Detect & Add New Minigames** – Drop a new game in the folder and the launcher detects it automatically. 📂
+14. **Mini-Game Stats & Analytics** – Track personal bests, average score, completion rates. 📊
+15. **Custom Hotkeys & Shortcuts** – Launch games, toggle themes, or open settings with keyboard shortcuts. ⌨️
 
 ---
 
