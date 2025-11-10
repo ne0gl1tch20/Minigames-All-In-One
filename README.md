@@ -103,17 +103,23 @@ https://www.python.org/downloads/
 MGAIO/
 ├─ src/
 │  ├─ scripts/
-│  │  └─ main.py
-├─ minigames/
-│  ├─ Game1/
-│  │  ├─ main.py
-│  │  ├─ config.json
-│  │  └─ icon.ico
-├─ Documents/
+│  │  ├─ main.py           # Launcher/game entry point
+│  │  └─ minigames/        # All individual game folders live here
+│  │     ├─ Game1/
+│  │     │  ├─ main.py
+│  │     │  ├─ config.json
+│  │     │  └─ icon.ico
+│  │     ├─ Game2/
+│  │     │  ├─ main.py
+│  │     │  ├─ config.json
+│  │     │  └─ icon.ico
+│  │     └─ ...            # Other games
+└─ %USERPROFILE%/Documents/
    └─ .mgaio/
-      ├─ Saves/           # Game save files (backed up/restored via launcher)
-      ├─ settingsave.json # Launcher settings
-      └─ themesave.json   # Selected theme
+      ├─ Saves/             # Game save files (backed up/restored via launcher)
+      ├─ settingsave.json   # Launcher settings
+      ├─ recently_played.json  # Recently played games timestamps
+      └─ game_meta_cache.json # Cached minigame metadata
 ```
 
 ---
