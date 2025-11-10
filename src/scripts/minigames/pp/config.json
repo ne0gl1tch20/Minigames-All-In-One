@@ -2,5 +2,8 @@
   "title": "Pizza Panic",
   "description": "A chaotic pizza delivery game where you toss pizzas to hungry customers before they get angry!",
   "how_to_play": "1. Press Play to start the game.\n2. Use arrow keys or joystick to move your chef.\n3. Press SPACE (or action button) to toss pizzas to customers.\n4. Each successful delivery earns points.\n5. Missed or late deliveries lower customer patience.\n6. Survive as long as possible and aim for a high score!\n\nTips:\n- Prioritize closest customers first.\n- Watch the timer above each customer.\n- Combo deliveries for bonus points.",
-  "tags": ["Arcade","Fast-Paced","Clicker","Delivery","Pizza"]
+  "tags": ["Arcade","Fast-Paced","Clicker","Delivery","Pizza"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10"
 }

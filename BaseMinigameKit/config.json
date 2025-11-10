@@ -1,6 +1,9 @@
 {
-  "title": "Minigame One",
+  "title": "Minigame SDK",
   "description": "A fun little game where you click as fast as possible to earn points.",
   "how_to_play": "1. Press Play to start the game.\n2. Click on targets as quickly as you can.\n3. Each hit gives points.\n4. Avoid missing targets.\n5. Try to beat your high score!\n\nTips:\n- Focus on the center of the screen.\n- Stay calm and do not rush.",
-  "tags": ["Clicker","Arcade","Fast-Paced"]
+  "tags": ["Clicker","Arcade","Fast-Paced"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10"
 }

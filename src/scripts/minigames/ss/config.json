@@ -1,0 +1,9 @@
+{
+  "title": "Snack Stack",
+  "description": "Stack the snacks as high as possible without toppling them! Test your timing and precision in this fun, fast-paced arcade challenge.",
+  "how_to_play": "1. Press Play to start the game.\n2. Snacks will appear one by one from the top.\n3. Drop each snack carefully to stack them.\n4. The taller your stack, the more points you earn.\n5. Avoid letting the stack fall over!\n\nTips:\n- Watch the alignment carefully.\n- Timing is key to a perfect stack.\n- Each successful drop increases your score multiplier!",
+  "tags": ["Arcade", "Stacking", "Timing", "Skill", "Casual", "High Score"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10"
+}

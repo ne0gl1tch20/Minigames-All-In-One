@@ -1,0 +1,9 @@
+{
+  "title": "Color Slider",
+  "description": "Adjust the slider to match the moving color bar! Test your reflexes and color matching skills.",
+  "how_to_play": "1. Press Play to start the game.\n2. A color bar will move horizontally across the screen.\n3. Adjust the slider to match the color of the moving bar.\n4. Press the action key (SPACE / joystick button) to confirm the match.\n5. Earn points for accurate matches.\n6. Try to get the highest score before time runs out!\n\nTips:\n- Watch the color carefully.\n- Timing is key.\n- Accuracy gives higher points!",
+  "tags": ["Arcade", "Reaction", "Color Matching", "Skill"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10"
+}
