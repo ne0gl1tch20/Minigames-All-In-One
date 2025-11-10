@@ -2,5 +2,8 @@
   "title": "Lalalala Game",
   "description": "A fast-paced clicking game where you aim, click, and rack up points as quickly as possible.",
   "how_to_play": "1. Press 'Play' to start the game.\n2. Click on targets as fast as you can.\n3. Earn points for each successful hit.\n4. Avoid missing targets.\n5. Try to beat your personal high score!\n\nTips:\n- Focus on the center of the screen.\n- Stay calm and maintain steady clicks.",
-  "tags": ["Arcade","Reaction","Musical","Lala"]
+  "tags": ["Arcade","Reaction","Musical","Lala"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10"
 }

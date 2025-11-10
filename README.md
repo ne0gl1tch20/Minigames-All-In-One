@@ -80,7 +80,7 @@ Secure your launcher with a password to prevent unauthorized access.
 1. Download through Releases page:
 
 ```text
-https://github.com/ne0gl1tch20/Minigames-All-In-One
+https://github.com/ne0gl1tch20/Minigames-All-In-One/Releases
 ```
 
 2. Download Python 3.10+ if needed:
@@ -89,17 +89,9 @@ https://github.com/ne0gl1tch20/Minigames-All-In-One
 https://www.python.org/downloads/
 ```
 
-3. Install dependencies:
-
-```bash
-pip install PySide6 pygame librosa numpy
-```
-
-4. Run the launcher:
-
-```bash
-python src/scripts/main.py
-```
+3. Run this file:
+- The file will do it for you to launch the launcher.
+```runit.bat``
 
 > The launcher automatically detects all minigames in the `minigames/` folder.
 

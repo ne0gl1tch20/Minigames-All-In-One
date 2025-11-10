@@ -2,5 +2,8 @@
   "title": "Number Slider",
   "description": "A challenging 4x4 sliding puzzle game where you move tiles to arrange numbers in order.",
   "how_to_play": "1. Press Enter to start the game.\n2. Use arrow keys to move tiles into the empty space.\n3. Arrange all numbers in order from 1 to 15.\n4. Your score is based on how few moves you take.\n\nTips:\n- Plan ahead to avoid unnecessary moves.\n- Focus on completing one row at a time.\n- Keep track of the empty space to optimize moves.",
-  "tags": ["Puzzle","Logic","Strategy","Arcade"]
+  "tags": ["Puzzle","Logic","Strategy","Arcade"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10"
 }

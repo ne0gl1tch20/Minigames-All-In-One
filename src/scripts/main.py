@@ -1,37 +1,34 @@
-"""
-MGAIO Launcher v2 - Settings-driven, Achievements & Favorites
-Updated features:
-- Settings control most behavior (favorites-only view, mini rewards, achievements, daily challenges toggles)
-- Favorites system saved in settings
-- Reward (coins) system with mini_rewards toggle
-- Achievements tracking & simple unlock rules (First Play, 5 Plays, 10 Plays, Favorite Creator)
-- Achievements panel (view unlocked/locked achievements)
-- Achievements pop-up on unlock
-- Settings persistence and integration with UI actions
+#    _____    ________    _____  .___________    .____                               .__                  
+#   /     \  /  _____/   /  _  \ |   \_____  \   |    |   _____   __ __  ____   ____ |  |__   ___________ 
+#  /  \ /  \/   \  ___  /  /_\  \|   |/   |   \  |    |   \__  \ |  |  \/    \_/ ___\|  |  \_/ __ \_  __ \
+# /    Y    \    \_\  \/    |    \   /    |    \ |    |___ / __ \|  |  /   |  \  \___|   Y  \  ___/|  | \/
+# \____|__  /\______  /\____|__  /___\_______  / |_______ (____  /____/|___|  /\___  >___|  /\___  >__|   
+#         \/        \/         \/            \/          \/    \/           \/     \/     \/     \/       
+#                                           Made by G0ldNe0!
 
-Usage: drop this alongside your minigames folder, ensure PySide6 installed
-Run: python MGAIO_Launcher_v2_updated.py
-"""
+LAUNCHER_VERSION = "v0.2.0-prerelease"
 
-import sys
-import os, subprocess, tempfile
-import json, random
-import time
-import traceback, shutil
-from pathlib import Path
-from typing import List, Dict
-from zipfile import ZipFile, ZIP_DEFLATED
-import importlib.util
+# Standard library imports
+import sys                 # Access to system-specific parameters and functions
+import os, subprocess, tempfile  # os: file system operations, subprocess: run external programs, tempfile: temp files
+import json, random        # json: read/write JSON files, random: random numbers/selections
+import time                # Time-related functions (timestamps, sleep)
+import traceback, shutil   # traceback: exception details, shutil: file operations like copy/move
+from pathlib import Path   # Object-oriented filesystem paths
+from typing import List, Dict  # Type hints for lists and dictionaries
+from zipfile import ZipFile, ZIP_DEFLATED  # Handle ZIP archives
+import importlib.util       # Dynamic import of modules by file path
 
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QScrollArea,
-    QFrame, QFileDialog, QLineEdit, QDialog, QMessageBox, QComboBox, QInputDialog, QSizePolicy,
-    QCheckBox, QSpinBox, QColorDialog, QFontDialog, QListWidget, QListWidgetItem, QTextEdit,
-    QGridLayout
+# PySide6 imports for GUI
+from PySide6.QtWidgets import (  
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QScrollArea,  # Core widgets and layouts
+    QFrame, QFileDialog, QLineEdit, QDialog, QMessageBox, QComboBox, QInputDialog, QSizePolicy,  # Dialogs, input widgets, and sizing
+    QCheckBox, QSpinBox, QColorDialog, QFontDialog, QListWidget, QListWidgetItem, QTextEdit,  # Additional widgets
+    QGridLayout  # Grid layout manager
 )
-from PySide6.QtGui import QIcon, QPixmap, QFont, QColor
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
-from PySide6.QtWidgets import QGraphicsDropShadowEffect
+from PySide6.QtGui import QIcon, QPixmap, QFont, QColor  # Icons, images, fonts, colors
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize  # Core functionality, animation, constants
+from PySide6.QtWidgets import QGraphicsDropShadowEffect  # Shadow effect for widgets
 
 # ------------------- PATHS / CONFIG -------------------
 if os.name == 'nt':
@@ -1098,13 +1095,15 @@ class Launcher(QWidget):
         )
 
     def show_about(self):
-        self._show_dialog("About MGAIO Launcher",
-            "MGAIO Launcher v2\n"
+        self._show_dialog(
+            "About MGAIO Launcher",
+            f"MGAIO Launcher {LAUNCHER_VERSION}\n"
             "Minigames All-In-One\n\n"
             "• Developed for offline minigame management\n"
             "• Features theming, search, filtering, and leaderboards\n"
             "• Saveable settings, app lock, and smooth UI\n\n"
-            "© 2025 MGAIO Project", 400, 280
+            "© 2025 MGAIO Project",
+            400, 280
         )
 
     def _show_dialog(self, title, text, width, height):

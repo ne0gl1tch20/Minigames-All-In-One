@@ -1,36 +1,34 @@
-"""
-MGAIO Launcher v2 - Settings-driven, Achievements & Favorites
-Updated features:
-- Settings control most behavior (favorites-only view, mini rewards, achievements, daily challenges toggles)
-- Favorites system saved in settings
-- Reward (coins) system with mini_rewards toggle
-- Achievements tracking & simple unlock rules (First Play, 5 Plays, 10 Plays, Favorite Creator)
-- Achievements panel (view unlocked/locked achievements)
-- Achievements pop-up on unlock
-- Settings persistence and integration with UI actions
+#    _____    ________    _____  .___________    .____                               .__                  
+#   /     \  /  _____/   /  _  \ |   \_____  \   |    |   _____   __ __  ____   ____ |  |__   ___________ 
+#  /  \ /  \/   \  ___  /  /_\  \|   |/   |   \  |    |   \__  \ |  |  \/    \_/ ___\|  |  \_/ __ \_  __ \
+# /    Y    \    \_\  \/    |    \   /    |    \ |    |___ / __ \|  |  /   |  \  \___|   Y  \  ___/|  | \/
+# \____|__  /\______  /\____|__  /___\_______  / |_______ (____  /____/|___|  /\___  >___|  /\___  >__|   
+#         \/        \/         \/            \/          \/    \/           \/     \/     \/     \/       
+#                                           Made by G0ldNe0!
 
-Usage: drop this alongside your minigames folder, ensure PySide6 installed
-Run: python MGAIO_Launcher_v2_updated.py
-"""
+LAUNCHER_VERSION = "v0.2.0-prerelease"
 
-import sys
-import os, subprocess, tempfile
-import json
-import time
-import traceback, shutil
-from pathlib import Path
-from typing import List, Dict
-import importlib.util
+# Standard library imports
+import sys                 # Access to system-specific parameters and functions
+import os, subprocess, tempfile  # os: file system operations, subprocess: run external programs, tempfile: temp files
+import json, random        # json: read/write JSON files, random: random numbers/selections
+import time                # Time-related functions (timestamps, sleep)
+import traceback, shutil   # traceback: exception details, shutil: file operations like copy/move
+from pathlib import Path   # Object-oriented filesystem paths
+from typing import List, Dict  # Type hints for lists and dictionaries
+from zipfile import ZipFile, ZIP_DEFLATED  # Handle ZIP archives
+import importlib.util       # Dynamic import of modules by file path
 
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QScrollArea,
-    QFrame, QFileDialog, QLineEdit, QDialog, QMessageBox, QComboBox, QInputDialog, QSizePolicy,
-    QCheckBox, QSpinBox, QColorDialog, QFontDialog, QListWidget, QListWidgetItem, QTextEdit,
-    QGridLayout
+# PySide6 imports for GUI
+from PySide6.QtWidgets import (  
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QScrollArea,  # Core widgets and layouts
+    QFrame, QFileDialog, QLineEdit, QDialog, QMessageBox, QComboBox, QInputDialog, QSizePolicy,  # Dialogs, input widgets, and sizing
+    QCheckBox, QSpinBox, QColorDialog, QFontDialog, QListWidget, QListWidgetItem, QTextEdit,  # Additional widgets
+    QGridLayout  # Grid layout manager
 )
-from PySide6.QtGui import QIcon, QPixmap, QFont, QColor
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
-from PySide6.QtWidgets import QGraphicsDropShadowEffect
+from PySide6.QtGui import QIcon, QPixmap, QFont, QColor  # Icons, images, fonts, colors
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize  # Core functionality, animation, constants
+from PySide6.QtWidgets import QGraphicsDropShadowEffect  # Shadow effect for widgets
 
 # ------------------- PATHS / CONFIG -------------------
 if os.name == 'nt':
@@ -42,6 +40,8 @@ MGAIO_DIR = os.path.join(USER_DIR, "Documents", ".mgaio")
 SAVE_PATH = os.path.join(MGAIO_DIR, "Saves")
 SETTINGS_PATH = os.path.join(MGAIO_DIR, "settingsave.json")
 CACHE_PATH = os.path.join(MGAIO_DIR, "game_meta_cache.json")
+RECENTLY_PLAYED_PATH = os.path.join(MGAIO_DIR, "recently_played.json")
+
 
 os.makedirs(SAVE_PATH, exist_ok=True)
 
@@ -59,7 +59,7 @@ REQUIRED_LIBS = ["pyinstaller"]  # Add more if needed
 
 # ------------------- DEFAULT SETTINGS -------------------
 DEFAULT_SETTINGS = {
-    "theme": "default",
+    "theme": "light",
     "lock_password": "",
     "last_window_geometry": None,
     "recently_played": {},
@@ -77,6 +77,20 @@ DEFAULT_SETTINGS = {
     "grid_columns": 3,
     "card_size": "Normal",
 }
+
+# save launched games:# Load recently played
+def load_recently_played():
+    if os.path.exists(RECENTLY_PLAYED_PATH):
+        try:
+            with open(RECENTLY_PLAYED_PATH, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_recently_played(data):
+    with open(RECENTLY_PLAYED_PATH, "w") as f:
+        json.dump(data, f, indent=2)
 
 # load settings safely
 try:
@@ -137,7 +151,7 @@ class GameCard(QFrame):
         self.meta = meta
         self.setObjectName('game_card')
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.setMinimumHeight(100)
+        self.setMinimumHeight(120)
         self.setFrameShape(QFrame.StyledPanel)
         self.setStyleSheet('border-radius:12px;')
 
@@ -160,13 +174,20 @@ class GameCard(QFrame):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(6)
 
+        # Main info area
         top_layout = QHBoxLayout()
         self._add_icon(top_layout)
         self._add_text_column(top_layout)
         self._add_buttons_column(top_layout)
 
         layout.addLayout(top_layout)
+
+        # Extra metadata info (Author, Version, Release Date)
+        self._add_meta_info(layout)
+
+        # Tags
         self._add_tags(layout)
+
         self.setLayout(layout)
 
     def _add_icon(self, parent_layout):
@@ -196,11 +217,24 @@ class GameCard(QFrame):
 
         parent_layout.addLayout(text_layout, stretch=1)
 
+
+    def _add_meta_info(self, parent_layout):
+        """Shows author, version, and release date below the description."""
+        # Pull directly from meta; fallback only if missing
+        author = self.meta.get("author", "—")           # Shows "—" if no author
+        version = self.meta.get("version", "1.0.0")    # Default to 1.0.0 if missing
+        release_date = self.meta.get("release_date", "—")  # Shows "—" if no date
+
+        info_label = QLabel(f"👤 {author}  •  🕓 {release_date}  •  🧩 v{version}")
+        info_label.setFont(QFont("Segoe UI", 9))
+        info_label.setStyleSheet("color: gray;")
+        parent_layout.addWidget(info_label)
+
+
     def _add_buttons_column(self, parent_layout):
         btn_layout = QVBoxLayout()
         btn_layout.setSpacing(6)
 
-        # Primary buttons
         self.play_btn = QPushButton('▶ Play')
         self.play_btn.setFixedHeight(30)
         self.play_btn.clicked.connect(self.launch_game)
@@ -210,17 +244,15 @@ class GameCard(QFrame):
         self.howto_btn.setFixedHeight(30)
         self.howto_btn.clicked.connect(self.show_howto)
         btn_layout.addWidget(self.howto_btn)
-        
+
         self.favorite_btn = QPushButton('⭐ Favorite')
         self.favorite_btn.setCheckable(True)
-        # reflect settings favorites
         folder_name = self.meta.get('folder_name')
         fav_list = settings.get('favorites', [])
         self.favorite_btn.setChecked(folder_name in fav_list)
         self.favorite_btn.clicked.connect(self.toggle_favorite)
         btn_layout.addWidget(self.favorite_btn)
 
-        # Reorder buttons
         reorder_layout = QHBoxLayout()
         self.up_btn = QPushButton('▲')
         self.up_btn.setFixedSize(30, 28)
@@ -253,7 +285,7 @@ class GameCard(QFrame):
         tags_layout = QHBoxLayout()
         for t in tags[:5]:
             chip = QLabel(t)
-            chip.setStyleSheet('padding:4px 8px; border-radius:8px;')
+            chip.setStyleSheet('padding:4px 8px; border-radius:8px; background-color:#2c2c2c; color:white;')
             chip.setFont(QFont('Segoe UI', 9))
             tags_layout.addWidget(chip)
         tags_layout.addStretch()
@@ -296,16 +328,17 @@ class GameCard(QFrame):
         import os
         import sys
         import time
-        import shutil
 
         main_py = os.path.join(self.meta.get('path', ''), 'main.py')
         if not os.path.exists(main_py):
-            QtWidgets.QMessageBox.warning(self, 'Launch Error', f"No main.py found in {self.meta.get('path')}")
+            QtWidgets.QMessageBox.warning(self, 'Launch Error',
+                                        f"No main.py found in {self.meta.get('path')}")
             return
 
         folder_name = self.meta.get('folder_name') or os.path.basename(self.meta.get('path', ''))
 
-        # Update settings
+        # ------------------- Update recently played -------------------
+        # 1. Update settings
         settings.setdefault('recently_played', {})[folder_name] = int(time.time())
         pc = settings.setdefault('play_counts', {})
         pc[folder_name] = pc.get(folder_name, 0) + 1
@@ -314,17 +347,34 @@ class GameCard(QFrame):
             settings['coins'] = settings.get('coins', 0) + 1
         save_settings()
 
-        # Check achievements
+        # 2. Update dedicated recently_played.json
+        try:
+            RECENTLY_PLAYED_PATH = os.path.join(MGAIO_DIR, "recently_played.json")
+            if os.path.exists(RECENTLY_PLAYED_PATH):
+                with open(RECENTLY_PLAYED_PATH, "r") as f:
+                    recent = json.load(f)
+            else:
+                recent = {}
+
+            recent[folder_name] = int(time.time())
+            with open(RECENTLY_PLAYED_PATH, "w") as f:
+                json.dump(recent, f, indent=2)
+        except Exception as e:
+            print("Failed to update recently_played.json:", e)
+
+        # ------------------- Achievements -------------------
         total_plays = sum(settings.get('play_counts', {}).values())
         if total_plays >= 1: check_unlock_achievement('first_play')
         if total_plays >= 5: check_unlock_achievement('five_plays')
         if total_plays >= 10: check_unlock_achievement('ten_plays')
 
-        # Launch Python script directly
+        # ------------------- Launch game -------------------
         try:
             subprocess.Popen([sys.executable, main_py])
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
+            QtWidgets.QMessageBox.critical(self, 'Launch Failed',
+                                        f'Failed to launch game: {e}')
+
 
 
 
@@ -442,7 +492,7 @@ class SettingsDialog(QDialog):
         self.layout.addWidget(save_btn)
 
     def _app_lock_section(self):
-        self.add_section_label("🔒 App Lock & Security")
+        self.add_section_label("--- 🔒 App Lock & Security ---")
         self.pwd_input = QLineEdit()
         self.pwd_input.setEchoMode(QLineEdit.Password)
         self.pwd_input.setText(settings.get("lock_password", ""))
@@ -465,7 +515,7 @@ class SettingsDialog(QDialog):
         self.layout.addWidget(self.auto_lock_spin)
 
     def _theme_section(self):
-        self.add_section_label("🎨 Theme & UI Customization")
+        self.add_section_label("--- 🎨 Theme & UI Customization ---")
         self.layout.addWidget(QLabel("Theme Presets:"))
         for key in themes.keys():
             btn = QPushButton(key.capitalize())
@@ -481,16 +531,9 @@ class SettingsDialog(QDialog):
         self.font_btn.clicked.connect(self.pick_font)
         self.layout.addWidget(self.font_btn)
 
-        self.dark_mode_toggle = QCheckBox("Enable Dark Mode")
-        self.dark_mode_toggle.setChecked(settings.get("dark_mode", False))
-        self.layout.addWidget(self.dark_mode_toggle)
-
-        self.animated_bg_toggle = QCheckBox("Enable Animated Background")
-        self.animated_bg_toggle.setChecked(settings.get("animated_bg", False))
-        self.layout.addWidget(self.animated_bg_toggle)
 
     def _launcher_layout_section(self):
-        self.add_section_label("🖥️ Launcher Layout & Behavior")
+        self.add_section_label("--- 🖥️ Launcher Layout & Behavior ---")
 
         self.view_toggle = QComboBox()
         self.view_toggle.addItems(["Grid", "List"])
@@ -515,14 +558,10 @@ class SettingsDialog(QDialog):
         self.layout.addWidget(self.card_size_combo)
 
     def _game_management_section(self):
-        self.add_section_label("🎮 Game Management")
+        self.add_section_label("--- 🎮 Game Management ---")
         self.favorites_toggle = QCheckBox("Show Favorites Only")
         self.favorites_toggle.setChecked(settings.get("favorites_only", False))
         self.layout.addWidget(self.favorites_toggle)
-
-        self.hide_games_toggle = QCheckBox("Hide Selected Games")
-        self.hide_games_toggle.setChecked(settings.get("hide_games", False))
-        self.layout.addWidget(self.hide_games_toggle)
 
         self.auto_sort_combo = QComboBox()
         self.auto_sort_combo.addItems(["Alphabetical", "Recently Played", "Favorites"])
@@ -531,9 +570,70 @@ class SettingsDialog(QDialog):
         self.layout.addWidget(self.auto_sort_combo)
 
         self.bulk_backup_btn = QPushButton("Backup All Game Saves")
+        self.bulk_backup_btn.clicked.connect(self.backup_saves)
         self.layout.addWidget(self.bulk_backup_btn)
+
         self.bulk_restore_btn = QPushButton("Restore All Game Saves")
+        self.bulk_restore_btn.clicked.connect(self.restore_saves)
         self.layout.addWidget(self.bulk_restore_btn)
+
+        # Clear cache button
+        self.clear_cache_btn = QPushButton("Clear Game Cache")
+        self.clear_cache_btn.clicked.connect(self.clear_cache)
+        self.layout.addWidget(self.clear_cache_btn)
+
+    def backup_saves(self):
+        if not os.path.exists(SAVE_PATH):
+            QMessageBox.warning(self, "Backup", "No saves found to backup!")
+            return
+        path, _ = QFileDialog.getSaveFileName(self, "Backup Game Saves", "", "ZIP Files (*.zip)")
+        if path:
+            try:
+                with ZipFile(path, "w", ZIP_DEFLATED) as zipf:
+                    for root, dirs, files in os.walk(SAVE_PATH):
+                        for file in files:
+                            full_path = os.path.join(root, file)
+                            arcname = os.path.relpath(full_path, SAVE_PATH)
+                            zipf.write(full_path, arcname)
+                QMessageBox.information(self, "Backup", "All game saves have been backed up!")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to backup saves:\n{e}")
+
+    def restore_saves(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Restore Game Saves", "", "ZIP Files (*.zip)")
+        if path:
+            reply = QMessageBox.question(
+                self, "Restore Saves",
+                "This will overwrite your current saves. Continue?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                try:
+                    if os.path.exists(SAVE_PATH):
+                        shutil.rmtree(SAVE_PATH)
+                    os.makedirs(SAVE_PATH, exist_ok=True)
+                    with ZipFile(path, "r") as zipf:
+                        zipf.extractall(SAVE_PATH)
+                    QMessageBox.information(self, "Restore", "All game saves have been restored!")
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Failed to restore saves:\n{e}")
+
+    def clear_cache(self):
+        reply = QMessageBox.question(
+            self, "Clear Cache?",
+            "Only do this if a game isn't working properly.\n\nDo you want to clear the cache?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            try:
+                if os.path.exists(CACHE_PATH):
+                    os.remove(CACHE_PATH)
+                QMessageBox.information(self, "Cache Cleared", "Game cache has been cleared.")
+                # reload games after clearing cache
+                if hasattr(self.parent(), "load_games"):
+                    self.parent().load_games()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to clear cache:\n{e}")
 
     def _backup_restore_section(self):
         self.add_section_label("💾 Backup / Restore")
@@ -545,23 +645,13 @@ class SettingsDialog(QDialog):
             self.layout.addWidget(btn)
 
     def _advanced_features_section(self):
-        self.add_section_label("⚙️ Advanced Launcher Features")
-        toggles = [("Enable Card Particles", "particles"),
-                   ("Enable Sound Effects", "sound_effects"),
-                   ("Show Notifications", "notifications"),
-                   ("Show Achievements Panel", "achievements_panel")]
-        for text, key in toggles:
-            cb = QCheckBox(text)
-            cb.setChecked(settings.get(key, True))
-            setattr(self, f"{key}_toggle", cb)
-            self.layout.addWidget(cb)
-
+        self.add_section_label("--- ⚙ Advanced Features ---")
         self.custom_script_btn = QPushButton("Select Startup Script")
         self.custom_script_btn.clicked.connect(self.select_script)
         self.layout.addWidget(self.custom_script_btn)
 
     def _fun_section(self):
-        self.add_section_label("🎉 Fun / Gamification")
+        self.add_section_label("--- 🎉 Fun / Gamification ---")
         toggles = [("Enable Daily Challenges", "daily_challenges"),
                    ("Enable Mini Rewards", "mini_rewards"),
                    ("Enable Easter Eggs", "easter_eggs")]
@@ -621,12 +711,37 @@ class SettingsDialog(QDialog):
             QMessageBox.information(self, "Restore", "Settings restored.")
 
     def reset_to_default(self):
+        # First warning prompt
+        reply = QMessageBox.warning(
+            self,
+            "⚠️ Reset to Default",
+            "This will erase all your current settings and cannot be undone!\n\nDo you want to continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        # Second typed confirmation
+        text, ok = QInputDialog.getText(
+            self,
+            "Confirm Reset",
+            "Type 'RESET' to confirm:",
+            QLineEdit.Normal
+        )
+        if not ok or text.strip().upper() != "RESET":
+            QMessageBox.information(self, "Cancelled", "Reset cancelled.")
+            return
+
+        # Proceed with actual reset
         global theme
         settings.clear()
         settings.update(DEFAULT_SETTINGS.copy())
         theme = themes["default"]
         save_settings()
-        QMessageBox.information(self, "Reset", "Settings reset to default.")
+        QMessageBox.information(self, "Reset", "Settings have been reset to default.")
+        sys.exit()
+
 
     def select_script(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select Python Startup Script", "", "Python Files (*.py)")
@@ -641,16 +756,12 @@ class SettingsDialog(QDialog):
         settings["lock_on_startup"] = self.lock_on_startup.isChecked()
         settings["auto_lock"] = self.auto_lock_spin.value()
 
-        settings["dark_mode"] = self.dark_mode_toggle.isChecked()
-        settings["animated_bg"] = self.animated_bg_toggle.isChecked()
-
         settings["view_mode"] = self.view_toggle.currentText()
         settings["grid_columns"] = self.columns_spin.value()
         settings["compact_mode"] = self.compact_mode_toggle.isChecked()
         settings["card_size"] = self.card_size_combo.currentText()
 
         settings["favorites_only"] = self.favorites_toggle.isChecked()
-        settings["hide_games"] = self.hide_games_toggle.isChecked()
         settings["auto_sort"] = self.auto_sort_combo.currentText()
 
         for key in ["particles", "sound_effects", "notifications", "achievements_panel",
@@ -760,7 +871,6 @@ class Launcher(QWidget):
             if not os.path.isdir(folder_path):
                 continue
             meta = self._load_game_meta(folder, folder_path, cache_handled)
-            # set favorite flag from settings
             meta['favorite'] = folder in settings.get('favorites', [])
             fresh_meta.append(meta)
 
@@ -770,10 +880,18 @@ class Launcher(QWidget):
         except Exception:
             pass
 
-        # Sort games (recent first or alphabetical)
-        fresh_meta.sort(key=self._sort_key)
+        # Filter favorites if needed
+        if settings.get("favorites_only", False):
+            fresh_meta = [m for m in fresh_meta if m.get('favorite', False)]
 
-        self._populate_cards(fresh_meta)
+        # Load recently played
+        recently_played = load_recently_played()
+
+        # Sort games alphabetically for Recommended section later
+        fresh_meta.sort(key=lambda m: m.get('title', '').lower())
+        
+        self._populate_cards(fresh_meta, recently_played)
+
 
     def _clear_cards(self):
         while self.vbox.count():
@@ -799,27 +917,48 @@ class Launcher(QWidget):
                 meta['path'] = folder_path
                 return meta
 
-        meta = {'title': folder, 'description': '', 'how_to_play': '', 'tags': [], 'path': folder_path, 'folder_name': folder}
+        # Defaults
+        meta = {
+            'title': folder,
+            'description': '',
+            'how_to_play': '',
+            'tags': [],
+            'path': folder_path,
+            'folder_name': folder,
+            'author': 'Unknown',
+            'version': '1.0.0',
+            'release_date': 'Unknown'
+        }
+
         config_path = os.path.join(folder_path, 'config.json')
         if os.path.exists(config_path):
             try:
                 data = safe_load_json(config_path)
                 if isinstance(data, dict):
                     meta['title'] = data.get('title', meta['title'])
-                    meta['description'] = data.get('description', '')
-                    meta['how_to_play'] = data.get('how_to_play', '')
+                    meta['description'] = data.get('description', meta['description'])
+                    meta['how_to_play'] = data.get('how_to_play', meta['how_to_play'])
                     meta['tags'] = [str(t).strip() for t in (data.get('tags') or []) if t]
+                    meta['author'] = data.get('author', meta.get('author', '—'))
+                    meta['version'] = data.get('version', meta.get('version', '1.0.0'))
+                    meta['release_date'] = data.get('release_date', meta.get('release_date', '—'))
+
             except Exception:
                 pass
 
+        # Save to cache
         cache_handled[folder] = {'mtime': mtime, 'meta': {
             'title': meta['title'],
             'description': meta['description'],
             'how_to_play': meta['how_to_play'],
             'tags': meta['tags'],
-            'folder_name': meta['folder_name']
+            'folder_name': meta['folder_name'],
+            'author': meta['author'],
+            'version': meta['version'],
+            'release_date': meta['release_date']
         }}
         return meta
+
 
     def _sort_key(self, meta):
         recent_map = settings.get('recently_played', {})
@@ -828,27 +967,78 @@ class Launcher(QWidget):
             return (0, -int(rp))
         return (1, meta.get('title', '').lower())
 
-    def _populate_cards(self, fresh_meta):
-        for meta in fresh_meta:
-            card = GameCard(meta, self)
-            card.up_btn.clicked.connect(lambda _, c=card: self.move_card_up(c))
-            card.down_btn.clicked.connect(lambda _, c=card: self.move_card_down(c))
-            self.vbox.addWidget(card)
-            self.cards.append(card)
-            self.game_meta.append({
-                'title': meta.get('title', '').lower(),
-                'desc': str(meta.get('description', '')).lower(),
-                'tags': [t.lower() for t in meta.get('tags', [])],
-                'card': card,
-                'favorite': meta.get('favorite', False),
-                'folder_name': meta.get('folder_name')
-            })
-            self.available_tags.update(meta.get('tags', []))
+    def _populate_cards(self, fresh_meta, recently_played: dict):
+        self.cards.clear()
+        self.game_meta.clear()
+        self.available_tags = set()
+        self.filter_combo.clear()
+        self.filter_combo.addItem('All')
 
+        # Clear layout first
+        while self.vbox.count():
+            w = self.vbox.takeAt(0).widget()
+            if w:
+                w.setParent(None)
+
+        # --- Recently Played Section ---
+        if recently_played:
+            rp_label = QLabel("Recently Played")
+            rp_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+            self.vbox.addWidget(rp_label)
+
+            # Sort descending by timestamp
+            sorted_rp = sorted(recently_played.items(), key=lambda x: x[1], reverse=True)
+            for folder_name, _ts in sorted_rp:
+                meta = next((m for m in fresh_meta if m['folder_name'] == folder_name), None)
+                if meta:
+                    card = GameCard(meta, self)
+                    self._connect_card_buttons(card)
+                    self.vbox.addWidget(card)
+                    self._register_card_meta(card, meta)
+
+        # --- Recommended Section (shuffle) ---
+        rec_meta = [m for m in fresh_meta if m['folder_name'] not in recently_played]
+        if rec_meta:
+            rec_label = QLabel("Recommended")
+            rec_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+            self.vbox.addWidget(rec_label)
+
+            random.shuffle(rec_meta)
+            for meta in rec_meta:
+                card = GameCard(meta, self)
+                self._connect_card_buttons(card)
+                self.vbox.addWidget(card)
+                self._register_card_meta(card, meta)
+
+        # --- No games fallback ---
+        if not fresh_meta:
+            empty_label = QLabel("Games are not found!")
+            empty_label.setFont(QFont("Segoe UI", 14, QFont.Bold))
+            empty_label.setStyleSheet("color: red;")
+            empty_label.setAlignment(Qt.AlignCenter)
+            self.vbox.addWidget(empty_label)
+
+        # Populate filter combo with tags
         for t in sorted(self.available_tags, key=str.lower):
             self.filter_combo.addItem(t)
 
         self.apply_theme_to_cards()
+        
+    def _connect_card_buttons(self, card):
+        card.up_btn.clicked.connect(lambda _, c=card: self.move_card_up(c))
+        card.down_btn.clicked.connect(lambda _, c=card: self.move_card_down(c))
+
+    def _register_card_meta(self, card, meta):
+        self.cards.append(card)
+        self.game_meta.append({
+            'title': meta.get('title', '').lower(),
+            'desc': str(meta.get('description', '')).lower(),
+            'tags': [t.lower() for t in meta.get('tags', [])],
+            'card': card,
+            'favorite': meta.get('favorite', False),
+            'folder_name': meta.get('folder_name')
+        })
+        self.available_tags.update(meta.get('tags', []))
 
     def apply_current_theme(self):
         global theme
@@ -905,13 +1095,15 @@ class Launcher(QWidget):
         )
 
     def show_about(self):
-        self._show_dialog("About MGAIO Launcher",
-            "MGAIO Launcher v2\n"
+        self._show_dialog(
+            "About MGAIO Launcher",
+            f"MGAIO Launcher {LAUNCHER_VERSION}\n"
             "Minigames All-In-One\n\n"
             "• Developed for offline minigame management\n"
             "• Features theming, search, filtering, and leaderboards\n"
             "• Saveable settings, app lock, and smooth UI\n\n"
-            "© 2025 MGAIO Project", 400, 280
+            "© 2025 MGAIO Project",
+            400, 280
         )
 
     def _show_dialog(self, title, text, width, height):
