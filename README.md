@@ -146,18 +146,3 @@ MIT License – See [LICENSE](LICENSE) for details.
 ---
 
 **Enjoy your games! 🎮 Have fun with Minigames All-In-One Launcher!**
-
-```
-
----
-
-This version:  
-- Uses **raw image links** so screenshots render on GitHub.  
-- Highlights current games, extra apps, and future additions.  
-- Adds badges and polished formatting.  
-- Installation is concise and clear.  
-- Contact email is prominent but safe for personal inbox.  
-
-I can also **make an even fancier version** with **emoji section headers, color badges for each game category, and collapsible future games** for readability if you want it ultra-professional.  
-
-Do you want me to do that next?
