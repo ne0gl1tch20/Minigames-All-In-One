@@ -152,7 +152,10 @@ https://www.python.org/downloads/
 
 3. Run this file:
 - The file will do it for you to launch the launcher.
-```runit.bat``
+
+```
+runit.bat
+```
 
 > The launcher automatically detects all minigames in the `minigames/` folder.
 
