@@ -5,7 +5,7 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
-## [v0.2.7-prerelease] - November 2025
+## [v0.2.7-alpha] - November 2025
 **Status:** 🧪 Pre-release  
 **Commit:** (upcoming)  
 
@@ -37,7 +37,7 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
-## [v0.2.6-prerelease] - November 2025
+## [v0.2.6-alpha] - November 2025
 **Status:** 🧪 Pre-release  
 **Commit:** 46f6a89  
 
@@ -53,7 +53,7 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
-## [v0.2.5-prerelease] - November 2025
+## [v0.2.5-alpha] - November 2025
 **Status:** 🧪 Pre-release  
 **Commit:** 178ab4f  
 
@@ -65,7 +65,7 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
-## [v0.2.0-prerelease] - November 2025
+## [v0.2.0-alpha] - November 2025
 **Status:** 🧪 Pre-release  
 **Commit:** ca983a4  
 
@@ -80,7 +80,7 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
-## [v0.1.5-prerelease] - November 2025
+## [v0.1.5-alpha] - November 2025
 **Status:** 🧪 Pre-release  
 **Commit:** 4eb0d08  
 
