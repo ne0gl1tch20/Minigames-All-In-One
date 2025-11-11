@@ -142,6 +142,7 @@ MGAIO/
 │  │     │  │  ├─ images/
 │  │     │  │  ├─ music/
 │  │     │  │  ├─ sound/
+│  │     │  │  ├─ json/
 │  │     │  │  └─ icon.ico
 │  │     │  └─ config.json
 │  │     └─ Minigame2/
