@@ -133,21 +133,27 @@ python main.py
 MGAIO/
 ├─ src/
 │  ├─ scripts/
-│  │  ├─ main.py           # Launcher entry point
-│  │  └─ minigames/        # All minigame folders live here
-│  │     ├─ Game1/
-│  │     │  ├─ main.py
-│  │     │  ├─ config.json
-│  │     │  └─ icon.ico
-│  │     └─ ...
+│  │  ├─ main.py             # Launcher entry point
+│  │  └─ minigames/
+│  │     ├─ Minigame1/
+│  │     │  ├─ main.py       # Minigame entry
+│  │     │  ├─ data/         # All assets here
+│  │     │  │  ├─ sprites/
+│  │     │  │  ├─ images/
+│  │     │  │  ├─ music/
+│  │     │  │  ├─ sound/
+│  │     │  │  └─ icon.ico
+│  │     │  └─ config.json
+│  │     └─ Minigame2/
+│  │        └─ ...
 ├─ Documents/ (UserProfile)
 │  └─ .mgaio/
-│     ├─ Saves/             # Game save files
-│     ├─ settingsave.json   # Launcher settings
-│     └─ themesave.json     # Selected theme
+│     ├─ Saves/               # Game save files
+│     ├─ settingsave.json     # Launcher settings
+│     └─ themesave.json       # Selected theme
 ├─ docs/
-│  ├─ SDKGuide.md           # SDK / Integration guide
-│  └─ CHANGELOG.md          # Version changelog
+│  ├─ SDKGuide.md             # SDK / Integration guide
+│  └─ CHANGELOG.md            # Version changelog
 ```
 
 ---
