@@ -9,7 +9,7 @@
 [![Python Version](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 
 **Version:** v0.2.7-alpha 🚀
-**Status:** Pre-release ⚠️ – Early version for testing new features. Some bugs may exist.
+**Status:** Pre-release ⚠️ – Early version for testing new features. Some bugs may exist...
 
 ---
 
