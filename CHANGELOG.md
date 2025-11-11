@@ -5,6 +5,30 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
+## [v0.2.7-prerelease] - November 2025
+**Status:** 🧪 Pre-release  
+**Commit:** (upcoming)  
+
+### 🆕 What's New
+- Added new **productivity-style mini apps** inside MGAIO:
+  - 📅 **Mini Calendar / Event Planner**
+  - 🔥 **Habit Tracker / Streaks App**
+  - 🎯 **Daily Challenges / Missions App**
+  - 🎧 **Custom Soundboard App**
+  - 🎨 **Mini Drawing / Pixel Art App**
+- Added new **minigames**:
+  - 🔢 **Guess The Number**
+- Fixed minor save issues on new JSON format
+- Improved runtime speed when switching between Games ↔ Tools
+- Added category key inside config.json such as "category":"Games" and "entry":"main.py"
+
+### 🧩 Setup Notes
+- `runit.bat` automatically installs required libraries:
+  - `pygame`, `librosa`, `PySide6`, `numpy`, `pycryptodome`
+- If Python 3.12 isn’t installed, it downloads automatically  
+
+---
+
 ## [v0.2.6-prerelease] - November 2025
 **Status:** 🧪 Pre-release  
 **Commit:** 46f6a89  
