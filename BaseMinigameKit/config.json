@@ -5,5 +5,6 @@
   "tags": ["Clicker","Arcade","Fast-Paced"],
   "author": "G0ldNe0",
   "version": "1.0.0",
-  "release_date": "2025-11-10"
+  "release_date": "2025-11-10",
+  "entry": "scripts/main.py"
 }

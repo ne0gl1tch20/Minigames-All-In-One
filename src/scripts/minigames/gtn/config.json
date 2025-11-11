@@ -1,0 +1,10 @@
+{
+  "title": "Guess The Number",
+  "description": "A simple but addicting minigame where you try to guess the secret number in as few tries as possible!",
+  "how_to_play": "1. Press Play to start the game.\n2. The system will randomly choose a number between 1 and 100.\n3. Type your guess and press Enter.\n4. You’ll get hints like 'Too high!' or 'Too low!'.\n5. Keep guessing until you find the correct number.\n\nTips:\n- Start from the middle (around 50) to narrow it down.\n- Use logic to guess faster.\n- Challenge yourself to win in the fewest tries!",
+  "tags": ["Logic", "Number", "Puzzle", "Classic"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-10",
+  "entry": "scripts/main.py"
+}

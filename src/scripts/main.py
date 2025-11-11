@@ -448,7 +448,8 @@ class GameCard(QFrame):
         import sys
         import time
 
-        main_py = os.path.join(self.meta.get('path', ''), 'main.py')
+        entry_file = self.meta.get('entry', 'main.py')  # fallback to 'main.py'
+        main_py = os.path.join(self.meta.get('path', ''), entry_file)
         if not os.path.exists(main_py):
             QtWidgets.QMessageBox.warning(self, 'Launch Error',
                                         f"No main.py found in {self.meta.get('path')}")
@@ -1222,6 +1223,7 @@ class Launcher(QWidget):
                     meta['author'] = data.get('author', meta.get('author', '—'))
                     meta['version'] = data.get('version', meta.get('version', '1.0.0'))
                     meta['release_date'] = data.get('release_date', meta.get('release_date', '—'))
+                    meta['entry'] = data.get('entry', 'main.py')  # default to 'main.py' if missing
 
             except Exception:
                 pass
@@ -1235,7 +1237,8 @@ class Launcher(QWidget):
             'folder_name': meta['folder_name'],
             'author': meta['author'],
             'version': meta['version'],
-            'release_date': meta['release_date']
+            'release_date': meta['release_date'],
+            'entry': meta['entry'],  # <-- store entry path
         }}
         return meta
 

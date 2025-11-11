@@ -20,10 +20,12 @@ Before creating your own game, make sure to download the **Base Minigame Kit** f
 Every minigame lives in its own folder inside `src/scripts/minigames/`. The basic structure looks like this:
 
 ```text
-MinigameName/
-├─ main.py         # The main Python script that runs your game
-├─ config.json     # Configuration and metadata for your game
-└─ icon.ico        # Icon that appears in the launcher
+BaseMinigameKit/
+├─ data/
+├─ scripts/
+│  └─ main.py
+├─ config.json
+└─ icon.ico
 ````
 
 > ✅ Tip: Keep the folder name unique and descriptive. This name will appear in the launcher unless overridden in `config.json`.
@@ -42,21 +44,23 @@ Your `config.json` defines how your game is displayed in MGAIO. Here’s an exam
   "tags": ["Clicker","Arcade","Fast-Paced"],
   "author": "G0ldNe0",
   "version": "1.0.0",
-  "release_date": "2025-11-10"
+  "release_date": "2025-11-10",
+  "entry": "scripts/main.py"
 }
 ```
 
 ### 🔹 Fields Explained
 
-| Field          | Description                                  |
-| -------------- | -------------------------------------------- |
-| `title`        | Name of your minigame as it appears in MGAIO |
-| `description`  | Short summary of your game                   |
-| `how_to_play`  | Instructions & tips for players              |
-| `tags`         | Categories for search/filter in the launcher |
-| `author`       | Your name or handle                          |
-| `version`      | Game version                                 |
-| `release_date` | YYYY-MM-DD format of release                 |
+| Field          | Description                                                                          |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `title`        | Name of your minigame as it appears in MGAIO                                         |
+| `description`  | Short summary of your game                                                           |
+| `how_to_play`  | Instructions & tips for players                                                      |
+| `tags`         | Categories for search/filter in the launcher                                         |
+| `author`       | Your name or handle                                                                  |
+| `version`      | Game version                                                                         |
+| `release_date` | YYYY-MM-DD format of release                                                         |
+| `entry`        | Relative path to the main Python file that runs the game (e.g., `"scripts/main.py"`) |
 
 ---
 
