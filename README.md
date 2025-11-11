@@ -91,10 +91,10 @@ Minigames All-In-One Launcher (MGAIO) is an **offline launcher for Python-based 
 
 ## 💻 Installation
 
-1. **Download the repo** or clone it:
+1. **Download the repo using releases**:
 
 ```bash
-git clone https://github.com/ne0gl1tch20/Minigames-All-In-One.git
+https://github.com/ne0gl1tch20/Minigames-All-In-One/releases
 ````
 
 2. **Run the batch installer** (Windows) to install Python, dependencies, and setup:
