@@ -28,7 +28,7 @@ This changelog follows the Keep a Changelog format.
 - Improved runtime speed when switching between Games ↔ Tools
 - Added "entry" key inside config.json
 
-- That's 35 minigames in total!
+- **That's 35 minigames in total!**
 
 ### 🧩 Setup Notes
 - `runit.bat` automatically installs required libraries:
