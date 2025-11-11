@@ -7,7 +7,7 @@ This changelog follows the Keep a Changelog format.
 
 ## [v0.2.7-alpha] - November 2025
 **Status:** 🧪 Pre-release  
-**Commit:** (upcoming)  
+**Commit:** 50e959c
 
 ### 🆕 What's New
 - Added new **productivity-style mini apps** inside MGAIO:
@@ -123,7 +123,7 @@ This changelog follows the Keep a Changelog format.
 
 ## [v0.0.0] - July/August 2025
 ### 🚀 Initial Build
-- First release of **Minigames All-In-One**  
+- First state of **Minigames All-In-One**  
 - Included **11 original minigames**:
   - Reaction Tester  
   - Quick Math Blitz  
