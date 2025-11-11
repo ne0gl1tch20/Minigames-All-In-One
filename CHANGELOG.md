@@ -20,7 +20,7 @@ This changelog follows the Keep a Changelog format.
   - 🔢 **Guess The Number**
 - Fixed minor save issues on new JSON format
 - Improved runtime speed when switching between Games ↔ Tools
-- Added category key inside config.json such as "category":"Games" and "entry":"main.py"
+- Added "entry" key inside config.json
 
 ### 🧩 Setup Notes
 - `runit.bat` automatically installs required libraries:
