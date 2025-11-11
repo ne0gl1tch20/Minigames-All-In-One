@@ -1,0 +1,10 @@
+{
+  "title": "Target Panic",
+  "description": "Rapid-target clicking — hit as many targets as you can before time runs out.",
+  "how_to_play": "1. Press Enter to start a timed round.\n2. Click targets that appear on screen to score points.\n3. Targets spawn faster as you score.\n4. Aim for a high score before time runs out.\n\nTips:\n- Keep your cursor near the center to minimize travel.\n- Prioritize visible larger targets first.",
+  "tags": ["Arcade","Reflex","Clicker","Speed"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-11",
+  "entry": "scripts/main.py"
+}

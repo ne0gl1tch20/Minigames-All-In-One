@@ -1,0 +1,10 @@
+{
+  "title": "Mini Drawing App",
+  "description": "A simple drawing and pixel art app where you can draw, save, and customize your creations with a fun interface.",
+  "how_to_play": "1. Select a brush or pixel tool.\n2. Click or drag on the canvas to draw.\n3. Use color picker to change colors.\n4. Use 'Undo' to revert mistakes.\n5. Save your artwork to your computer.\n\nTips:\n- Keep your canvas organized.\n- Experiment with colors and pixel patterns.\n- Use small brush sizes for pixel art precision.",
+  "tags": ["Drawing","Pixel Art","Creative","Fun","Art"],
+  "author": "G0ldNe0",
+  "version": "1.0.0",
+  "release_date": "2025-11-11",
+  "entry": "scripts/main.py"
+}

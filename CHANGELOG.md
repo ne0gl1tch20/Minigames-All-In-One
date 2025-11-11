@@ -16,11 +16,19 @@ This changelog follows the Keep a Changelog format.
   - 🎯 **Daily Challenges / Missions App**
   - 🎧 **Custom Soundboard App**
   - 🎨 **Mini Drawing / Pixel Art App**
+
 - Added new **minigames**:
   - 🔢 **Guess The Number**
+  - 🧮 **Math Mania**
+  - 🅰 **Word Ladder**
+  - 🧠 **Memory Vault**
+  - 🎯 **Target Panic**
+
 - Fixed minor save issues on new JSON format
 - Improved runtime speed when switching between Games ↔ Tools
 - Added "entry" key inside config.json
+
+- That's 35 minigames in total!
 
 ### 🧩 Setup Notes
 - `runit.bat` automatically installs required libraries:

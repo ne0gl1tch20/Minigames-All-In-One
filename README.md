@@ -60,16 +60,12 @@ Minigames All-In-One Launcher (MGAIO) is an **offline launcher for Python-based 
 ## 🚀 Planned Future Games & Apps
 
 ### 🧠 Brain / Puzzle Games
-- Math Mania – timed math puzzles  
-- Word Ladder – change one letter at a time  
 - Color Maze – navigate mazes by color rules  
 - Sudoku Challenge – classic sudoku with daily challenges  
-- Memory Vault – advanced memory matching  
 
 ### 🎯 Arcade / Action Games
 - Space Blaster – shoot incoming aliens/obstacles  
 - Jumping Jack – endless platform runner  
-- Target Panic – hit moving targets fast  
 - Speed Clicker – click as fast as possible under timer  
 - Dodgeball Dash – avoid falling objects  
 
@@ -81,11 +77,15 @@ Minigames All-In-One Launcher (MGAIO) is an **offline launcher for Python-based 
 - Toilet Paper Challenge – stack rolls as high as possible  
 
 ### 🛠 Future Apps / Tools
-- Mini Calendar / Event Planner  
-- Habit Tracker / Streaks App  
-- Daily Challenges / Missions App  
-- Custom Soundboard App  
-- Mini Drawing / Pixel Art App  
+
+* 📊 **Mood Tracker & Focus Timer**
+* 🔊 **Soundboard / Audio FX Lab**
+* 🎹 **Mini Music Studio**
+* 🏆 **Daily Challenge Hub**
+* 🐾 **Virtual Pet Companion App**
+* 🗂️ **Game Asset Organizer / Previewer**
+* 🎲 **Randomizer & Idea Generator**
+* 📈 **Offline Stats & Tracker Hub**
 
 ---
 

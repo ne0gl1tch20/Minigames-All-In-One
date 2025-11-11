@@ -441,33 +441,46 @@ class GameCard(QFrame):
         self.down_btn.setStyleSheet(secondary_btn_style)
         self.favorite_btn.setStyleSheet(secondary_btn_style)
 
+
+
     def launch_game(self):
-        import PySide6.QtWidgets as QtWidgets
-        import subprocess
+        
         import os
         import sys
         import time
-
+        import json
+        import subprocess
+        from PySide6 import QtWidgets
         entry_file = self.meta.get('entry', 'main.py')  # fallback to 'main.py'
         main_py = os.path.join(self.meta.get('path', ''), entry_file)
         if not os.path.exists(main_py):
-            QtWidgets.QMessageBox.warning(self, 'Launch Error',
-                                        f"No main.py found in {self.meta.get('path')}")
+            QtWidgets.QMessageBox.warning(
+                self, 'Launch Error', f"No main.py found in {self.meta.get('path')}"
+            )
             return
 
         folder_name = self.meta.get('folder_name') or os.path.basename(self.meta.get('path', ''))
 
         # ------------------- Update recently played -------------------
-        # 1. Update settings
         settings.setdefault('recently_played', {})[folder_name] = int(time.time())
+
+        # Sort recently_played by most recent
+        settings['recently_played'] = dict(
+            sorted(settings['recently_played'].items(), key=lambda x: x[1], reverse=True)
+        )
+
+        # Update play counts
         pc = settings.setdefault('play_counts', {})
         pc[folder_name] = pc.get(folder_name, 0) + 1
         settings['play_counts'] = pc
+
+        # Mini rewards
         if settings.get('mini_rewards', True):
             settings['coins'] = settings.get('coins', 0) + 1
+
         save_settings()
 
-        # 2. Update dedicated recently_played.json
+        # Update dedicated recently_played.json
         try:
             RECENTLY_PLAYED_PATH = os.path.join(MGAIO_DIR, "recently_played.json")
             if os.path.exists(RECENTLY_PLAYED_PATH):
@@ -477,6 +490,7 @@ class GameCard(QFrame):
                 recent = {}
 
             recent[folder_name] = int(time.time())
+            recent = dict(sorted(recent.items(), key=lambda x: x[1], reverse=True))
             with open(RECENTLY_PLAYED_PATH, "w") as f:
                 json.dump(recent, f, indent=2)
         except Exception as e:
@@ -492,11 +506,7 @@ class GameCard(QFrame):
         try:
             subprocess.Popen([sys.executable, main_py])
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, 'Launch Failed',
-                                        f'Failed to launch game: {e}')
-
-
-
+            QtWidgets.QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
 
     def show_howto(self):
         txt = self.meta.get('how_to_play') or 'No instructions available.'
@@ -909,7 +919,7 @@ class SettingsDialog(QDialog):
         reply = QMessageBox.warning(
             self,
             "⚠️ Reset to Default",
-            "This will erase all your current settings and cannot be undone!\n\nDo you want to continue?",
+            "This will erase all your current settings and plays and cannot be undone!\n\nDo you want to continue?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
