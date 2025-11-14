@@ -89,18 +89,26 @@ Your `config.json` defines how your game is displayed in MGAIO. Here’s an exam
 MGAIO/
 ├─ src/
 │  ├─ scripts/
-│  │  ├─ main.py           # Launcher entry point
-│  │  └─ minigames/        # All minigame folders live here
+│  │  ├─ main.py                 # Launcher entry point
+│  │  └─ minigames/              # All minigame folders live here
 │  │     ├─ Game1/
-│  │     │  ├─ main.py
+│  │     │  ├─ data/
+│  │     │  │  ├─ sound/
+│  │     │  │  ├─ music/
+│  │     │  │  ├─ images/
+│  │     │  │  ├─ sprites/
+│  │     │  │  ├─ json/
+│  │     │  │  └─ icon.ico
+│  │     │  ├─ scripts/
+│  │     │  │  └─ main.py
 │  │     │  ├─ config.json
 │  │     │  └─ icon.ico
-│  │     └─ ...
+│  │     └─ ...                 # Other minigames
 ├─ Documents/ (UserProfile)
 │  └─ .mgaio/
-│     ├─ Saves/             # Game save files
-│     ├─ settingsave.json   # Launcher settings
-│     └─ themesave.json     # Selected theme
+│     ├─ Saves/                  # Game save files
+│     ├─ settingsave.json        # Launcher settings
+│     └─ themesave.json          # Selected theme
 ```
 
 ---

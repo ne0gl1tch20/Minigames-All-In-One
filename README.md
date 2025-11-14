@@ -8,8 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 
-**Version:** v0.2.7-prerelease 🚀
-**Status:** Pre-release ⚠️ – Early version for testing new features. Some bugs may exist.
+**Version:** v0.2.7-alpha 🚀
+**Status:** Pre-release ⚠️ – Early version for testing new features. Some bugs may exist...
 
 ---
 
@@ -133,21 +133,28 @@ python main.py
 MGAIO/
 ├─ src/
 │  ├─ scripts/
-│  │  ├─ main.py           # Launcher entry point
-│  │  └─ minigames/        # All minigame folders live here
-│  │     ├─ Game1/
-│  │     │  ├─ main.py
-│  │     │  ├─ config.json
-│  │     │  └─ icon.ico
-│  │     └─ ...
+│  │  ├─ main.py             # Launcher entry point
+│  │  └─ minigames/
+│  │     ├─ Minigame1/
+│  │     │  ├─ main.py       # Minigame entry
+│  │     │  ├─ data/         # All assets here
+│  │     │  │  ├─ sprites/
+│  │     │  │  ├─ images/
+│  │     │  │  ├─ music/
+│  │     │  │  ├─ sound/
+│  │     │  │  ├─ json/
+│  │     │  │  └─ icon.ico
+│  │     │  └─ config.json
+│  │     └─ Minigame2/
+│  │        └─ ...
 ├─ Documents/ (UserProfile)
 │  └─ .mgaio/
-│     ├─ Saves/             # Game save files
-│     ├─ settingsave.json   # Launcher settings
-│     └─ themesave.json     # Selected theme
+│     ├─ Saves/               # Game save files
+│     ├─ settingsave.json     # Launcher settings
+│     └─ themesave.json       # Selected theme
 ├─ docs/
-│  ├─ SDKGuide.md           # SDK / Integration guide
-│  └─ CHANGELOG.md          # Version changelog
+│  ├─ SDKGuide.md             # SDK / Integration guide
+│  └─ CHANGELOG.md            # Version changelog
 ```
 
 ---
