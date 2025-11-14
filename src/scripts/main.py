@@ -23,6 +23,7 @@ import binascii  # for converting binary data to hex strings and back
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 import base64, re # encode and decode text, regular expressions
+import hmac
 
 # PySide6 imports for GUI
 from PySide6.QtWidgets import (  
@@ -1427,61 +1428,90 @@ class Launcher(QWidget):
         dlg = AchievementsDialog(self)
         dlg.exec()
 
-# ------------------- APP LOCK -------------------
+# - App Lock -
+# ---------- Password Hashing ----------
 def hash_password(password, salt=None):
-    """Hash password using PBKDF2 with SHA256"""
+    """Hash a password using PBKDF2-SHA256 with a random salt."""
     if not salt:
-        salt = os.urandom(16)  # generate 16-byte random salt
-    pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100_000)
-    return binascii.hexlify(salt).decode() + ":" + binascii.hexlify(pwdhash).decode()
+        salt = os.urandom(16)
+    pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 200_000)
+    return f"{binascii.hexlify(salt).decode()}:{binascii.hexlify(pwdhash).decode()}"
 
 def verify_password(stored_password, provided_password):
-    """Verify a stored password against one provided"""
-    salt_hex, pwdhash_hex = stored_password.split(":")
-    salt = binascii.unhexlify(salt_hex)
-    new_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100_000)
-    return binascii.hexlify(new_hash).decode() == pwdhash_hex
+    """Verify a stored password against one provided using timing-safe comparison."""
+    try:
+        salt_hex, pwdhash_hex = stored_password.split(":")
+        salt = binascii.unhexlify(salt_hex)
+        new_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 200_000)
+        return hmac.compare_digest(binascii.hexlify(new_hash).decode(), pwdhash_hex)
+    except Exception:
+        return False
 
-def app_lock():
-    stored_hash = settings.get('lock_password')
-    if not stored_hash:
-        return  # no lock set
-
-    max_attempts = 5
-    lockout_duration = 60  # in seconds
-
-    # Check if currently locked
+# ---------- Lockout Logic ----------
+def check_lockout():
+    """Check if the app is currently locked and show remaining lockout time."""
     now = int(time.time())
     lock_until = settings.get('lockout_until', 0)
     if lock_until > now:
         remaining = lock_until - now
-        QMessageBox.warning(None, "Locked Out", f"Too many wrong attempts! Try again in {remaining} seconds.")
-        sys.exit(1)
+        QMessageBox.warning(None, "Locked Out",
+                            f"Too many wrong attempts! Try again in {remaining} seconds.")
+        return True
+    return False
 
-    # Ask for password
-    text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password/pin:', QLineEdit.Password)
-    if not ok:
-        sys.exit(1)
+def handle_failed_attempt():
+    """Handle a failed password attempt with exponential lockout."""
+    now = int(time.time())
+    max_attempts = 5
+    base_lockout = 60  # 1 minute base
 
-    if verify_password(stored_hash, text):
-        # Correct password: reset attempts
-        settings['failed_attempts'] = 0
-        settings['lockout_until'] = 0
-        save_settings()
-        return  # allow access
-
-    # Wrong password
     settings['failed_attempts'] = settings.get('failed_attempts', 0) + 1
     remaining_tries = max_attempts - settings['failed_attempts']
 
     if remaining_tries <= 0:
+        # Exponential backoff for repeated lockouts
+        failed_lockouts = settings.get('failed_lockouts', 0)
+        lockout_duration = base_lockout * (2 ** failed_lockouts)
         settings['lockout_until'] = now + lockout_duration
-        QMessageBox.critical(None, 'Access Denied', f"Too many wrong attempts! Locked for {lockout_duration} seconds.")
+        settings['failed_attempts'] = 0
+        settings['failed_lockouts'] = failed_lockouts + 1
+        QMessageBox.critical(None, 'Access Denied',
+                             f"Too many wrong attempts! Locked for {lockout_duration} seconds.")
     else:
-        QMessageBox.critical(None, 'Access Denied', f"Wrong password! {remaining_tries} tries left.")
+        QMessageBox.critical(None, 'Access Denied',
+                             f"Wrong password! {remaining_tries} tries left.")
 
     save_settings()
-    sys.exit(1)
+
+# ---------- Main App Lock ----------
+def app_lock():
+    """Main function to lock the app until correct password is entered."""
+    stored_hash = settings.get('lock_password')
+    if not stored_hash:
+        return  # No lock set
+
+    if check_lockout():
+        return
+
+    # Ask for password until correct or user cancels
+    while True:
+        text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password/pin:', QLineEdit.Password)
+        if not ok:
+            # Optionally handle cancel as a failed attempt
+            handle_failed_attempt()
+            return  # Don't exit, just prevent access
+
+        if verify_password(stored_hash, text):
+            # Correct password: reset attempts
+            settings['failed_attempts'] = 0
+            settings['failed_lockouts'] = 0
+            settings['lockout_until'] = 0
+            save_settings()
+            return  # allow access
+        else:
+            handle_failed_attempt()
+            if check_lockout():
+                return
 
 
 # ------------------- RUN -------------------
