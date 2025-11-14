@@ -1,10 +1,10 @@
 {
-  "title": "Micro Meditation",
-  "description": "Take short guided meditation breaks to reset your mind and reduce stress.",
-  "how_to_play": "1. Choose a session length (1–10 minutes).\n2. Press Start and follow the breathing guide.\n3. Relax and clear your mind.\n4. Session ends automatically and logs your meditation streak.",
-  "tags": ["Wellness","Mindfulness","Stress Relief","Focus"],
+  "title": "20-20-20 Eye Break",
+  "description": "Follow the 20-20-20 rule to reduce eye strain: every 20 minutes, look 20 feet away for 20 seconds.",
+  "how_to_play": "1. The app will track your screen time.\n2. Every 20 minutes, you'll get a reminder to look 20 feet away.\n3. Focus on something far for 20 seconds.\n4. Log each completed break to track your eye health streak.",
+  "tags": ["Wellness","Eye Care","Focus","Productivity"],
   "author": "G0ldNe0",
   "version": "1.0.0",
-  "release_date": "2025-11-10",
+  "release_date": "2025-11-14",
   "entry": "main.py"
 }
