@@ -1456,6 +1456,7 @@ def check_lockout():
         remaining = lock_until - now
         QMessageBox.warning(None, "Locked Out",
                             f"Too many wrong attempts! Try again in {remaining} seconds.")
+        sys.exit(1)
         return True
     return False
 
