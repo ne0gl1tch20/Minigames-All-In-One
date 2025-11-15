@@ -1476,8 +1476,6 @@ def handle_failed_attempt():
         settings['lockout_until'] = now + lockout_duration
         settings['failed_attempts'] = 0
         settings['failed_lockouts'] = failed_lockouts + 1
-        QMessageBox.critical(None, 'Access Denied',
-                             f"Too many wrong attempts! Locked for {lockout_duration} seconds.")
     else:
         QMessageBox.critical(None, 'Access Denied',
                              f"Wrong password! {remaining_tries} tries left.")
