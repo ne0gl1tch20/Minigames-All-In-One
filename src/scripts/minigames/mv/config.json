@@ -4,7 +4,7 @@
   "how_to_play": "1. Press Enter to start.\n2. Click two cards to flip them.\n3. Match identical pairs to remove them from the board.\n4. Complete the board in as few moves as possible.\n\nTips:\n- Try to remember locations of symbols.\n- Work methodically across the grid.",
   "tags": ["Memory","Puzzle","Cards","Classic"],
   "author": "G0ldNe0",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "release_date": "2025-11-11",
   "entry": "scripts/main.py"
 }
