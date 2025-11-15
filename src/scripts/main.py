@@ -6,7 +6,7 @@
 #         \/        \/         \/            \/          \/    \/           \/     \/     \/     \/       
 #                                           Made by G0ldNe0!
 
-LAUNCHER_VERSION = "v0.2.7-alpha"
+LAUNCHER_VERSION = "v0.3.0-alpha"
 
 # Standard library imports
 import sys                 # Access to system-specific parameters and functions

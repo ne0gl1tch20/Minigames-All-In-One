@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 
-**Version:** v0.2.7-alpha 🚀
+**Version:** v0.3.0-alpha 🚀
 **Status:** Pre-release ⚠️ – Early version for testing new features. Some bugs may exist...
 
 ---

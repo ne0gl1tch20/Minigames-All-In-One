@@ -5,6 +5,25 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
+## [v0.3.0-alpha] - November 15 2025
+**Status:** 🧪 Pre-release  
+**Commit:** 50e959c
+
+### 🆕 What's New
+
+- New layout!
+- Fixed dark mode text where it looks black
+- The app will now close when in lockout mode
+
+- **That's 35 minigames in total!**
+
+### 🧩 Setup Notes
+- `runit.bat` automatically installs required libraries:
+  - `pygame`, `librosa`, `PySide6`, `numpy`, `pycryptodome`
+- If Python 3.12 isn’t installed, it downloads automatically  
+
+---
+
 ## [v0.2.7-alpha] - November 2025
 **Status:** 🧪 Pre-release  
 **Commit:** 50e959c
