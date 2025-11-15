@@ -1,6 +1,6 @@
 /* =========================================
    MGAIO Launcher White Theme QSS
-   File: src/data/themes/white.qss
+   File: src/data/themes/default.qss
    ========================================= */
 
 /* QWidget - base background and font */

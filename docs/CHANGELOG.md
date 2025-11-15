@@ -10,10 +10,13 @@ This changelog follows the Keep a Changelog format.
 **Commit:** 50e959c
 
 ### 🆕 What's New
-
 - New layout!
-- Fixed dark mode text where it looks black
-- The app will now close when in lockout mode
+- Added Load Custom QSS settings button. 
+
+### 🐛 Bug Fixes
+- Fixed dark mode text where it looks black.
+- The app will correctly close when in lockout mode instead of opening the app.
+- Fixed 20-20-20 minigame mistakenly being labeled as "Micro Meditation" from rushed work sessions.
 
 - **That's 35 minigames in total!**
 
@@ -43,6 +46,7 @@ This changelog follows the Keep a Changelog format.
   - 🧠 **Memory Vault**
   - 🎯 **Target Panic**
 
+### 🐛 Bug Fixes
 - Fixed minor save issues on new JSON format
 - Improved runtime speed when switching between Games ↔ Tools
 - Added "entry" key inside config.json
@@ -79,6 +83,8 @@ This changelog follows the Keep a Changelog format.
 ### 🆕 What's New
 - Added **5 new task-based apps** (includes mini productivity tools)  
 - Introduced **hidden Easter eggs** 🎉  
+
+### 🐛 Bug Fixes
 - Fixed multiple launcher bugs and glitches  
 - Improved runtime stability during minigame switching  
 

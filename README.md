@@ -178,6 +178,86 @@ Use our dedicated suggestions email: [`python709853@gmail.com`](mailto:python709
 
 ---
 
+## 🎨 Theme Customization
+
+MGAIO supports **custom themes using QSS**. You can load your own `.qss` file to completely change the look of the launcher.
+
+### 1️⃣ Using Preset Themes
+
+* Go to **Settings → Theme & UI Customization**.
+* Click on a preset theme (e.g., Dark, Light).
+* Click **Apply/Save Settings** for changes to take effect.
+
+### 2️⃣ Loading Your Own QSS
+
+* Go to **Settings → Theme & UI Customization → Load Custom QSS**.
+* Select a `.qss` file from your computer.
+* Click **Apply/Save Settings** to apply it.
+
+### 3️⃣ QSS Example
+
+```css
+/* =========================================
+   MGAIO Launcher Black Theme QSS - Unified Gray
+   File: src/data/themes/black.qss
+   ========================================= */
+
+/* QWidget - base background and font */
+QWidget {
+    background-color: #121212; /* dark background */
+    color: #EEEEEE;           /* light text */
+    font-family: "Segoe UI";
+    font-size: 11pt;
+}
+
+/* QLineEdit - search bar */
+QLineEdit {
+    background-color: #2C2C2C;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    padding: 6px;
+    selection-background-color: #444444;
+    color: #EEEEEE;
+}
+
+/* QPushButton - all main buttons */
+QPushButton {
+    background-color: #2C2C2C;
+    border: 1px solid #444444;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #EEEEEE;
+}
+QPushButton:hover { background-color: #3C3C3C; }
+QPushButton:pressed { background-color: #555555; }
+
+/* Scrollbar style */
+QScrollBar:vertical {
+    background: #2C2C2C;
+    width: 12px;
+}
+QScrollBar::handle:vertical { background: #555555; border-radius: 6px; }
+QScrollBar::handle:vertical:hover { background: #777777; }
+
+/* Play button - yellow */
+QPushButton#play_btn {
+    background-color: #FFCC00;
+    color: #000000;
+    border-radius: 8px;
+    font-weight: bold;
+}
+QPushButton#play_btn:hover { background-color: #FFE066; }
+QPushButton#play_btn:pressed { background-color: #E6B800; }
+```
+
+### 4️⃣ Notes
+
+* QSS changes **only apply after clicking Apply/Save** in the settings.
+* You can combine JSON themes with a custom `.qss` for advanced styling.
+* Experiment safely—make a copy of your current theme first!
+
+---
+
 ## ⚡ License
 
 MIT License – See [LICENSE](LICENSE) for details.

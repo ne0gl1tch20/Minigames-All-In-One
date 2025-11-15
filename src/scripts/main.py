@@ -227,10 +227,6 @@ class GameCard(QFrame):
         self.setObjectName('game_card')
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.setMinimumHeight(120)
-        self.setFrameShape(QFrame.StyledPanel)
-        # don't set big stylesheet here (it can override child QSS)
-        # use objectName and global QSS instead
-        self.setStyleSheet("")  
 
         # Shadow effect
         shadow = QGraphicsDropShadowEffect(blurRadius=18, xOffset=0, yOffset=6)
@@ -456,7 +452,7 @@ class GameCard(QFrame):
         tags_layout.setSpacing(6)
         for t in tags[:5]:
             chip = QLabel(t)
-            chip.setStyleSheet('padding:4px 8px; border-radius:8px; background-color:#2c2c2c; color:white;')
+            chip.setObjectName("game_tag")
             chip.setFont(QFont('Segoe UI', 9))
             tags_layout.addWidget(chip)
         tags_layout.addStretch()
@@ -654,6 +650,26 @@ class SettingsDialog(QDialog):
         self.export_theme_btn = QPushButton("Export Theme")
         self.export_theme_btn.clicked.connect(self.export_theme)
         self.layout.addWidget(self.export_theme_btn)
+        
+        # Inside _theme_section()
+        self.load_qss_btn = QPushButton("Load Custom QSS")
+        self.load_qss_btn.clicked.connect(self.load_custom_qss)
+        self.layout.addWidget(self.load_qss_btn)
+
+    def load_custom_qss(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Select QSS File", "", "Stylesheets (*.qss)")
+        if not path:
+            return
+
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                qss = f.read()
+                self.parent().setStyleSheet(qss)  # Apply to main window
+                settings["custom_qss_path"] = path  # Save path to settings
+                save_settings()
+            QMessageBox.information(self, "Custom QSS", f"Applied QSS from: {os.path.basename(path)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load QSS:\n{e}")
 
     def import_theme(self):
         path, _ = QFileDialog.getOpenFileName(self, "Import Theme JSON", "", "JSON Files (*.json)")
@@ -1066,6 +1082,12 @@ class Launcher(QWidget):
 
         # Apply initial theme
         self.apply_current_theme()
+        
+        custom_qss = settings.get("custom_qss_path")
+        if custom_qss and os.path.exists(custom_qss):
+            with open(custom_qss, 'r', encoding='utf-8') as f:
+                self.setStyleSheet(f.read())
+
 
     def keyPressEvent(self, event):
         self._current_code.append(event.key())
