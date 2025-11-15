@@ -155,9 +155,9 @@ class Lalalala:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("LALALALA — Upgraded (librosa)")
         self.clock = pygame.time.Clock()
-        self.font_big = pygame.font.SysFont("arial", 56, bold=True)
-        self.font_med = pygame.font.SysFont("arial", 28)
-        self.font_sm = pygame.font.SysFont("arial", 16)
+        self.font_big = pygame.font.SysFont("segoe ui emoji", 56, bold=True)
+        self.font_med = pygame.font.SysFont("segoe ui emoji", 28)
+        self.font_sm = pygame.font.SysFont("segoe ui emoji", 16)
         self.running = True
 
         # load settings
