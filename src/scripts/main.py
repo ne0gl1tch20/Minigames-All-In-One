@@ -21,7 +21,6 @@ import importlib.util       # Dynamic import of modules by file path
 import hashlib  # provides secure hashing functions (we use PBKDF2 for passwords)
 import binascii  # for converting binary data to hex strings and back
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
 import base64, re # encode and decode text, regular expressions
 import hmac
 
