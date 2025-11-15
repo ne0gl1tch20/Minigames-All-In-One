@@ -129,6 +129,7 @@ python main.py
 
 ## 📂 Directory Structure
 
+- Subject to change.
 ```text
 MGAIO/
 ├─ src/
