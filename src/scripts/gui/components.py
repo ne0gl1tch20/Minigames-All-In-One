@@ -12,7 +12,7 @@ from typing import Dict
 # PySide6 imports
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QFrame,
-    QSizePolicy, QMessageBox, QDialog, QGraphicsDropShadowEffect
+    QSizePolicy, QMessageBox, QDialog, QGraphicsDropShadowEffect, QSizePolicy
 )
 from PySide6.QtGui import QPixmap, QFont, QColor
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
@@ -51,6 +51,10 @@ class GameCard(QFrame):
         
         self._add_gameplay_widgets()
         self.update_layout_view(self.current_view)
+        
+        # Prevent vertical shrinking
+        self.setMinimumHeight(100)  # tweak as needed
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     def _build_ui(self):
         layout = QVBoxLayout()
@@ -114,25 +118,22 @@ class GameCard(QFrame):
         # check_unlock_achievement('rated_a_game')
 
     def update_layout_view(self, view_mode: str):
-        self.current_view = view_mode
         compact = settings.get("compact_mode", False)
-
         if view_mode == "Grid":
-            self.setMaximumHeight(180 if not compact else 100)
+            self.setFixedHeight(180 if not compact else 100)
             self.desc_label.setVisible(not compact)
             self.howto_btn.setVisible(not compact)
             self.title_label.setAlignment(Qt.AlignCenter)
-        else:
-            self.setMaximumHeight(220 if not compact else 120)
+        else:  # List view
+            self.setFixedHeight(220 if not compact else 140)
             self.desc_label.setVisible(True)
             self.howto_btn.setVisible(True)
             self.title_label.setAlignment(Qt.AlignLeft)
 
+        # Fix button column width
         if hasattr(self, "btn_container"):
-            self.btn_container.setFixedWidth(110 if view_mode == "Grid" else 140)
-
-        self.updateGeometry()
-        self.update()
+            self.btn_container.setFixedWidth(140)
+            self.btn_container.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
 
     def _add_icon(self, parent_layout):
         self.icon_label = QLabel()
@@ -150,7 +151,6 @@ class GameCard(QFrame):
         text_layout = QVBoxLayout()
         text_layout.setSpacing(4)
         text_layout.setContentsMargins(0, 0, 0, 0)
-        text_layout.addStretch(1)
 
         self.title_label = QLabel(self.meta.get('title', 'Unknown'))
         self.title_label.setFont(QFont('Segoe UI', 13, QFont.Bold))
@@ -165,7 +165,6 @@ class GameCard(QFrame):
         self.desc_label.setAlignment(Qt.AlignVCenter)
         text_layout.addWidget(self.desc_label, 0, Qt.AlignVCenter)
 
-        text_layout.addStretch(1)
         parent_layout.addLayout(text_layout, stretch=1)
 
     def update_ui(self):
@@ -178,10 +177,11 @@ class GameCard(QFrame):
             self.show()
 
         compact = settings.get("compact_mode", False)
-        self.setMaximumHeight(100 if compact else 220)
-        self.desc_label.setVisible(not compact)
-        self.howto_btn.setVisible(not compact)
-        self.setFixedHeight(140)
+        # NEW: unified fixed height based on compact mode
+        self.setFixedHeight(140 if not settings.get("compact_mode", False) else 100)
+        self.desc_label.setVisible(not settings.get("compact_mode", False))
+        self.howto_btn.setVisible(not settings.get("compact_mode", False))
+
 
     def _add_meta_info(self, parent_layout):
         author = self.meta.get("author", "—")
@@ -269,7 +269,6 @@ class GameCard(QFrame):
             chip.setObjectName("game_tag")
             chip.setFont(QFont('Segoe UI', 9))
             tags_layout.addWidget(chip)
-        tags_layout.addStretch()
         parent_layout.addLayout(tags_layout)
 
     def apply_theme(self):

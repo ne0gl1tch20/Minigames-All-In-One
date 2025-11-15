@@ -37,9 +37,6 @@ python -m pip install --upgrade pip
 echo Installing essential libraries...
 python -m pip install --upgrade pygame librosa PySide6 numpy pycryptodome
 
-:: ---------------- Navigate to scripts folder ----------------
-cd scripts
-
 :: ---------------- Run main.py ----------------
 echo Running main.py...
 python main.py

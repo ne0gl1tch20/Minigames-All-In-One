@@ -14,9 +14,9 @@ from typing import List, Dict
 # PySide6 imports
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QMenuBar,
-    QComboBox, QLineEdit, QAction, QMessageBox, QDialog
+    QComboBox, QLineEdit, QMessageBox, QDialog
 )
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtGui import QIcon, QFont, QAction
 from PySide6.QtCore import Qt
 
 # Project imports
@@ -293,6 +293,13 @@ class Launcher(QWidget):
 
             for meta in recently_played_meta:
                 card = GameCard(meta, self)
+                
+                # --- FIX: set height based on settings ---
+                view_mode = settings.get("view_mode", "List")
+                compact = settings.get("compact_mode", False)
+                card.setFixedHeight(240)
+
+                
                 self._connect_card_buttons(card)
                 self.vbox.addWidget(card)
                 self._register_card_meta(card, meta)
@@ -305,6 +312,7 @@ class Launcher(QWidget):
             random.shuffle(recommended_meta)
             for meta in recommended_meta:
                     card = GameCard(meta, self)
+                    card.setFixedHeight(240)
                     self._connect_card_buttons(card)
                     self.vbox.addWidget(card)
                     self._register_card_meta(card, meta)
