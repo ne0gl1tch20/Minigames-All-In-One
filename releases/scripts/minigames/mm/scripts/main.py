@@ -33,9 +33,9 @@ W, H = 800, 600
 screen = pygame.display.set_mode((W, H))
 pygame.display.set_caption(APP_NAME)
 clock = pygame.time.Clock()
-font_big = pygame.font.SysFont("arial", 48, bold=True)
-font_med = pygame.font.SysFont("arial", 28)
-font_sm = pygame.font.SysFont("arial", 18)
+font_big = pygame.font.SysFont("segoe ui emoji", 48, bold=True)
+font_med = pygame.font.SysFont("segoe ui emoji", 28)
+font_sm = pygame.font.SysFont("segoe ui emoji", 18)
 
 # ---------- GAME STATE ----------
 score = 0

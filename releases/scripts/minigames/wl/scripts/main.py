@@ -31,9 +31,9 @@ W,H=800,600
 screen=pygame.display.set_mode((W,H))
 pygame.display.set_caption(APP_NAME)
 clock=pygame.time.Clock()
-f_big=pygame.font.SysFont("arial",56)
-f_med=pygame.font.SysFont("arial",28)
-f_sm=pygame.font.SysFont("arial",18)
+f_big=pygame.font.SysFont("segoe ui emoji",56)
+f_med=pygame.font.SysFont("segoe ui emoji",28)
+f_sm=pygame.font.SysFont("segoe ui emoji",18)
 
 leaderboard = load_lb()
 score=0

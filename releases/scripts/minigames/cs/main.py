@@ -95,9 +95,9 @@ class BaseMinigame:
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption(APP_NAME)
         self.clock = pygame.time.Clock()
-        self.font_big = pygame.font.SysFont("arial", 44, bold=True)
-        self.font_med = pygame.font.SysFont("arial", 22)
-        self.font_sm = pygame.font.SysFont("arial", 16)
+        self.font_big = pygame.font.SysFont("segoe ui emoji", 44, bold=True)
+        self.font_med = pygame.font.SysFont("segoe ui emoji", 22)
+        self.font_sm = pygame.font.SysFont("segoe ui emoji", 16)
 
         # Load settings / leaderboard
         self.settings = load_json(SETTINGS_FILE, DEFAULT_SETTINGS.copy())

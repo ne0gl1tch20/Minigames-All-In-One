@@ -6,7 +6,7 @@
 #         \/        \/         \/            \/          \/    \/           \/     \/     \/     \/       
 #                                           Made by G0ldNe0!
 
-LAUNCHER_VERSION = "v0.2.7-alpha"
+LAUNCHER_VERSION = "v0.3.0-alpha"
 
 # Standard library imports
 import sys                 # Access to system-specific parameters and functions
@@ -21,8 +21,8 @@ import importlib.util       # Dynamic import of modules by file path
 import hashlib  # provides secure hashing functions (we use PBKDF2 for passwords)
 import binascii  # for converting binary data to hex strings and back
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
 import base64, re # encode and decode text, regular expressions
+import hmac
 
 # PySide6 imports for GUI
 from PySide6.QtWidgets import (  
@@ -131,11 +131,13 @@ except Exception:
     settings = DEFAULT_SETTINGS.copy()
 
 # THEMES
+base_dir = os.path.dirname(os.path.abspath(__file__))  # folder of the current .py
 themes = {
-    "default": {"bg": "#1e1e2f", "fg": "#ffffff", "accent": "#ffcc00"},
-    "light": {"bg": "#f0f0f0", "fg": "#222222", "accent": "#ff8800"},
-    "dark": {"bg": "#121212", "fg": "#ffffff", "accent": "#00ffcc"},
+    "default": {"qss": os.path.join(base_dir, "..", "data", "themes", "default.qss"), "bg": "#1e1e2f", "fg": "#ffffff"},
+    "light":   {"qss": os.path.join(base_dir, "..", "data", "themes", "light.qss"), "bg": "#f0f0f0", "fg": "#222222"},
+    "dark":    {"qss": os.path.join(base_dir, "..", "data", "themes", "dark.qss"), "bg": "#121212", "fg": "#ffffff"},
 }
+
 
 theme = themes.get(settings.get('theme', 'default'), themes['default'])
 
@@ -225,8 +227,6 @@ class GameCard(QFrame):
         self.setObjectName('game_card')
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.setMinimumHeight(120)
-        self.setFrameShape(QFrame.StyledPanel)
-        self.setStyleSheet('border-radius:12px;')
 
         # Shadow effect
         shadow = QGraphicsDropShadowEffect(blurRadius=18, xOffset=0, yOffset=6)
@@ -235,12 +235,16 @@ class GameCard(QFrame):
 
         # Build UI
         self._build_ui()
+        # don't force QSS here; launcher should load theme globally
         self.apply_theme()
 
         # Hover animation
         self.anim = QPropertyAnimation(self, b'geometry')
         self.anim.setDuration(180)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
+
+        # keep track of current view
+        self.current_view = "List"
 
     def _build_ui(self):
         layout = QVBoxLayout()
@@ -249,6 +253,9 @@ class GameCard(QFrame):
 
         # Main info area
         top_layout = QHBoxLayout()
+        top_layout.setSpacing(12)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+
         self._add_icon(top_layout)
         self._add_text_column(top_layout)
         self._add_buttons_column(top_layout)
@@ -269,18 +276,27 @@ class GameCard(QFrame):
         compact = settings.get("compact_mode", False)
 
         if view_mode == "Grid":
-            # Smaller, stacked layout
+            # Stacked/compact look for Grid (title centered, fewer details)
             self.setMaximumHeight(180 if not compact else 100)
             self.desc_label.setVisible(not compact)
             self.howto_btn.setVisible(not compact)
             self.title_label.setAlignment(Qt.AlignCenter)
         else:
-            # List mode: horizontal full info
+            # List mode: horizontal full info, left-aligned text
             self.setMaximumHeight(220 if not compact else 120)
             self.desc_label.setVisible(True)
             self.howto_btn.setVisible(True)
             self.title_label.setAlignment(Qt.AlignLeft)
-        
+
+        # If you want the button container width different per view, adjust here:
+        # e.g., narrower buttons for Grid
+        if hasattr(self, "btn_container"):
+            if view_mode == "Grid":
+                self.btn_container.setFixedWidth(110)
+            else:
+                self.btn_container.setFixedWidth(140)
+
+        self.updateGeometry()
         self.update()
 
     def _add_icon(self, parent_layout):
@@ -293,103 +309,134 @@ class GameCard(QFrame):
                 self.icon_label.setPixmap(pixmap)
             except Exception:
                 pass
-        parent_layout.addWidget(self.icon_label)
+        parent_layout.addWidget(self.icon_label, 0, Qt.AlignVCenter)
 
     def _add_text_column(self, parent_layout):
         text_layout = QVBoxLayout()
+        text_layout.setSpacing(4)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Add stretch at the top to push content to center
+        text_layout.addStretch(1)
+
         self.title_label = QLabel(self.meta.get('title', 'Unknown'))
         self.title_label.setFont(QFont('Segoe UI', 13, QFont.Bold))
         self.title_label.setWordWrap(False)
-        text_layout.addWidget(self.title_label)
+        self.title_label.setAlignment(Qt.AlignLeft)
+        text_layout.addWidget(self.title_label, 0, Qt.AlignVCenter)
 
         self.desc_label = QLabel(self.meta.get('description', ''))
         self.desc_label.setFont(QFont('Segoe UI', 10))
         self.desc_label.setWordWrap(True)
         self.desc_label.setMaximumHeight(38)
-        text_layout.addWidget(self.desc_label)
+        self.desc_label.setAlignment(Qt.AlignVCenter)
+        text_layout.addWidget(self.desc_label, 0, Qt.AlignVCenter)
 
+        # Add stretch at the bottom
+        text_layout.addStretch(1)
+
+        # Keep text column flexible
         parent_layout.addLayout(text_layout, stretch=1)
+
 
     def update_ui(self):
         """Update card according to current launcher settings."""
-        # Theme
+        # Theme: keep this minimal so QSS can take over globally
         self.apply_theme()
-        
+
         # Favorites filter
         folder = self.meta.get("folder_name")
         if settings.get("favorites_only", False) and folder not in settings.get("favorites", []):
             self.hide()
         else:
             self.show()
-        
+
         # Compact mode
         compact = settings.get("compact_mode", False)
         self.setMaximumHeight(100 if compact else 200)
         self.desc_label.setVisible(not compact)
         self.howto_btn.setVisible(not compact)
-        
+
         # Card size
-        size = settings.get("card_size", "Normal")
-        if size == "Mini":
-            self.setFixedHeight(100)
-        elif size == "Normal":
-            self.setFixedHeight(140)
-        else:  # Large
-            self.setFixedHeight(180)
+        # Example in update_ui
+        self.setFixedHeight(140)  # same as Recently Played default
+
 
     def _add_meta_info(self, parent_layout):
         """Shows author, version, and release date below the description."""
-        # Pull directly from meta; fallback only if missing
-        author = self.meta.get("author", "—")           # Shows "—" if no author
-        version = self.meta.get("version", "1.0.0")    # Default to 1.0.0 if missing
-        release_date = self.meta.get("release_date", "—")  # Shows "—" if no date
+        author = self.meta.get("author", "—")
+        version = self.meta.get("version", "1.0.0")
+        release_date = self.meta.get("release_date", "—")
 
         info_label = QLabel(f"👤 {author}  •  🕓 {release_date}  •  🧩 v{version}")
         info_label.setFont(QFont("Segoe UI", 9))
         info_label.setStyleSheet("color: gray;")
         parent_layout.addWidget(info_label)
 
-
     def _add_buttons_column(self, parent_layout):
-        btn_layout = QVBoxLayout()
-        btn_layout.setSpacing(6)
+        # Put buttons in a dedicated widget so it won't stretch the whole row
+        self.btn_container = QWidget()
+        btn_layout = QVBoxLayout(self.btn_container)
+        btn_layout.setSpacing(8)
+        btn_layout.setContentsMargins(0, 0, 0, 0)
+        btn_layout.setAlignment(Qt.AlignTop)
 
+        # Play
         self.play_btn = QPushButton('▶ Play')
+        self.play_btn.setObjectName("play_btn")
         self.play_btn.setFixedHeight(30)
+        self.play_btn.setFixedWidth(120)
+        self.play_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.play_btn.clicked.connect(self.launch_game)
-        btn_layout.addWidget(self.play_btn)
+        btn_layout.addWidget(self.play_btn, 0, Qt.AlignTop)
 
+        # How to play
         self.howto_btn = QPushButton('❓ How to Play')
+        self.howto_btn.setObjectName("howto_btn")
         self.howto_btn.setFixedHeight(30)
+        self.howto_btn.setFixedWidth(120)
+        self.howto_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.howto_btn.clicked.connect(self.show_howto)
-        btn_layout.addWidget(self.howto_btn)
+        btn_layout.addWidget(self.howto_btn, 0, Qt.AlignTop)
 
+        # Favorite
         self.favorite_btn = QPushButton('⭐ Favorite')
+        self.favorite_btn.setObjectName("favorite_btn")
         self.favorite_btn.setCheckable(True)
         folder_name = self.meta.get('folder_name')
         fav_list = settings.get('favorites', [])
         self.favorite_btn.setChecked(folder_name in fav_list)
         self.favorite_btn.clicked.connect(self.toggle_favorite)
-        btn_layout.addWidget(self.favorite_btn)
+        self.favorite_btn.setFixedHeight(30)
+        self.favorite_btn.setFixedWidth(120)
+        self.favorite_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        btn_layout.addWidget(self.favorite_btn, 0, Qt.AlignTop)
 
-        reorder_layout = QHBoxLayout()
+        # Reorder small buttons
+        reorder_widget = QWidget()
+        reorder_layout = QHBoxLayout(reorder_widget)
+        reorder_layout.setContentsMargins(0, 0, 0, 0)
+        reorder_layout.setSpacing(6)
         self.up_btn = QPushButton('▲')
         self.up_btn.setFixedSize(30, 28)
         self.down_btn = QPushButton('▼')
         self.down_btn.setFixedSize(30, 28)
         reorder_layout.addWidget(self.up_btn)
         reorder_layout.addWidget(self.down_btn)
-        btn_layout.addLayout(reorder_layout)
+        btn_layout.addWidget(reorder_widget, 0, Qt.AlignTop)
 
-        parent_layout.addLayout(btn_layout)
-        
+        # Fix the column width so it doesn't expand and push the text vertically
+        self.btn_container.setFixedWidth(140)
+        self.btn_container.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
+
+        parent_layout.addWidget(self.btn_container, 0, Qt.AlignTop)
+
     def toggle_favorite(self):
         folder = self.meta.get('folder_name')
         favs = settings.setdefault('favorites', [])
         if self.favorite_btn.isChecked():
             if folder not in favs:
                 favs.append(folder)
-                # achievement for marking favorite
                 check_unlock_achievement('favorite_creator')
         else:
             if folder in favs:
@@ -402,118 +449,73 @@ class GameCard(QFrame):
         if not tags:
             return
         tags_layout = QHBoxLayout()
+        tags_layout.setSpacing(6)
         for t in tags[:5]:
             chip = QLabel(t)
-            chip.setStyleSheet('padding:4px 8px; border-radius:8px; background-color:#2c2c2c; color:white;')
+            chip.setObjectName("game_tag")
             chip.setFont(QFont('Segoe UI', 9))
             tags_layout.addWidget(chip)
         tags_layout.addStretch()
         parent_layout.addLayout(tags_layout)
 
     def apply_theme(self):
-        self.setStyleSheet(f"background-color: {theme['bg']}; border-radius:12px;")
-        self.title_label.setStyleSheet(f"color: {theme['accent']};")
-        self.desc_label.setStyleSheet(f"color: {theme['fg']};")
-
-        primary_btn_style = f"""
-            QPushButton {{
-                background-color: {theme['accent']};
-                color: #000;
-                border-radius: 8px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: #ffffff;
-                color: {theme['accent']};
-            }}
-        """
-        secondary_btn_style = f"""
-            QPushButton {{
-                background-color: {theme['fg']};
-                color: {theme['bg']};
-                border-radius: 6px;
-            }}
-        """
-
-        self.play_btn.setStyleSheet(primary_btn_style)
-        self.howto_btn.setStyleSheet(secondary_btn_style)
-        self.up_btn.setStyleSheet(secondary_btn_style)
-        self.down_btn.setStyleSheet(secondary_btn_style)
-        self.favorite_btn.setStyleSheet(secondary_btn_style)
-
-
+        # Keep this minimal — QSS should be applied at application/launcher level.
+        # If you need to tweak small label colors, do it here but avoid styling buttons.
+        # Example: set title/desc color fallbacks (QSS should override these)
+        self.title_label.setStyleSheet(f"")   # leave to QSS
+        self.desc_label.setStyleSheet(f"")    # leave to QSS
 
     def launch_game(self):
-        
-        import os
-        import sys
-        import time
-        import json
-        import subprocess
-        from PySide6 import QtWidgets
-        entry_file = self.meta.get('entry', 'main.py')  # fallback to 'main.py'
-        main_py = os.path.join(self.meta.get('path', ''), entry_file)
-        if not os.path.exists(main_py):
-            QtWidgets.QMessageBox.warning(
-                self, 'Launch Error', f"No main.py found in {self.meta.get('path')}"
-            )
-            return
-
-        folder_name = self.meta.get('folder_name') or os.path.basename(self.meta.get('path', ''))
-
-        # ------------------- Update recently played -------------------
-        settings.setdefault('recently_played', {})[folder_name] = int(time.time())
-
-        # Sort recently_played by most recent
-        settings['recently_played'] = dict(
-            sorted(settings['recently_played'].items(), key=lambda x: x[1], reverse=True)
-        )
-
-        # Update play counts
-        pc = settings.setdefault('play_counts', {})
-        pc[folder_name] = pc.get(folder_name, 0) + 1
-        settings['play_counts'] = pc
-
-        # Mini rewards
-        if settings.get('mini_rewards', True):
-            settings['coins'] = settings.get('coins', 0) + 1
-
-        save_settings()
-
-        # Update dedicated recently_played.json
+        # (unchanged) your existing launch logic...
         try:
-            RECENTLY_PLAYED_PATH = os.path.join(MGAIO_DIR, "recently_played.json")
-            if os.path.exists(RECENTLY_PLAYED_PATH):
-                with open(RECENTLY_PLAYED_PATH, "r") as f:
-                    recent = json.load(f)
-            else:
-                recent = {}
-
-            recent[folder_name] = int(time.time())
-            recent = dict(sorted(recent.items(), key=lambda x: x[1], reverse=True))
-            with open(RECENTLY_PLAYED_PATH, "w") as f:
-                json.dump(recent, f, indent=2)
-        except Exception as e:
-            print("Failed to update recently_played.json:", e)
-
-        # ------------------- Achievements -------------------
-        total_plays = sum(settings.get('play_counts', {}).values())
-        if total_plays >= 1: check_unlock_achievement('first_play')
-        if total_plays >= 5: check_unlock_achievement('five_plays')
-        if total_plays >= 10: check_unlock_achievement('ten_plays')
-
-        # ------------------- Launch game -------------------
-        try:
+            import os, sys, time, json, subprocess
+            from PySide6 import QtWidgets
+            entry_file = self.meta.get('entry', 'main.py')
+            main_py = os.path.join(self.meta.get('path', ''), entry_file)
+            if not os.path.exists(main_py):
+                QtWidgets.QMessageBox.warning(self, 'Launch Error', f"No main.py found in {self.meta.get('path')}")
+                return
+            folder_name = self.meta.get('folder_name') or os.path.basename(self.meta.get('path', ''))
+            settings.setdefault('recently_played', {})[folder_name] = int(time.time())
+            settings['recently_played'] = dict(sorted(settings['recently_played'].items(), key=lambda x: x[1], reverse=True))
+            pc = settings.setdefault('play_counts', {})
+            pc[folder_name] = pc.get(folder_name, 0) + 1
+            settings['play_counts'] = pc
+            if settings.get('mini_rewards', True):
+                settings['coins'] = settings.get('coins', 0) + 1
+            save_settings()
+            try:
+                RECENTLY_PLAYED_PATH = os.path.join(MGAIO_DIR, "recently_played.json")
+                if os.path.exists(RECENTLY_PLAYED_PATH):
+                    with open(RECENTLY_PLAYED_PATH, "r") as f:
+                        recent = json.load(f)
+                else:
+                    recent = {}
+                recent[folder_name] = int(time.time())
+                recent = dict(sorted(recent.items(), key=lambda x: x[1], reverse=True))
+                with open(RECENTLY_PLAYED_PATH, "w") as f:
+                    json.dump(recent, f, indent=2)
+            except Exception as e:
+                print("Failed to update recently_played.json:", e)
+            total_plays = sum(settings.get('play_counts', {}).values())
+            if total_plays >= 1: check_unlock_achievement('first_play')
+            if total_plays >= 5: check_unlock_achievement('five_plays')
+            if total_plays >= 10: check_unlock_achievement('ten_plays')
             subprocess.Popen([sys.executable, main_py])
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
+            try:
+                from PySide6 import QtWidgets
+                QtWidgets.QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
+            except Exception:
+                print("Launch failed:", e)
 
     def show_howto(self):
         txt = self.meta.get('how_to_play') or 'No instructions available.'
         dlg = QDialog(self)
         dlg.setWindowTitle(f"How to Play — {self.meta.get('title', 'Game')}")
         dlg.resize(520, 420)
-        dlg.setStyleSheet(f"background-color: {theme['bg']}; color: {theme['fg']};")
+        # Let global QSS style the dialog; use fallbacks
+        dlg.setStyleSheet("")
         layout = QVBoxLayout()
         label = QLabel(txt)
         label.setWordWrap(True)
@@ -521,6 +523,7 @@ class GameCard(QFrame):
         layout.addWidget(label)
         dlg.setLayout(layout)
         dlg.exec()
+
 
 # ------------------- Achievements UI & Logic -------------------
 
@@ -647,6 +650,26 @@ class SettingsDialog(QDialog):
         self.export_theme_btn = QPushButton("Export Theme")
         self.export_theme_btn.clicked.connect(self.export_theme)
         self.layout.addWidget(self.export_theme_btn)
+        
+        # Inside _theme_section()
+        self.load_qss_btn = QPushButton("Load Custom QSS")
+        self.load_qss_btn.clicked.connect(self.load_custom_qss)
+        self.layout.addWidget(self.load_qss_btn)
+
+    def load_custom_qss(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Select QSS File", "", "Stylesheets (*.qss)")
+        if not path:
+            return
+
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                qss = f.read()
+                self.parent().setStyleSheet(qss)  # Apply to main window
+                settings["custom_qss_path"] = path  # Save path to settings
+                save_settings()
+            QMessageBox.information(self, "Custom QSS", f"Applied QSS from: {os.path.basename(path)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load QSS:\n{e}")
 
     def import_theme(self):
         path, _ = QFileDialog.getOpenFileName(self, "Import Theme JSON", "", "JSON Files (*.json)")
@@ -1034,7 +1057,6 @@ class Launcher(QWidget):
         self.setWindowIcon(QIcon(self.resource_path("data/icon.ico")))
         self.setWindowTitle("Minigames All In One Launcher")
         self.setMinimumSize(760, 540)
-        self.setStyleSheet(f"background-color: {theme['bg']};")
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(14, 14, 14, 14)
@@ -1051,10 +1073,21 @@ class Launcher(QWidget):
 
         self.load_games()
         self._restore_geometry()
+
+        # Easter egg Konami code
         self._easter_code = [Qt.Key_Up, Qt.Key_Up, Qt.Key_Down, Qt.Key_Down,
                              Qt.Key_Left, Qt.Key_Right, Qt.Key_Left, Qt.Key_Right,
                              Qt.Key_B, Qt.Key_A]
         self._current_code = []
+
+        # Apply initial theme
+        self.apply_current_theme()
+        
+        custom_qss = settings.get("custom_qss_path")
+        if custom_qss and os.path.exists(custom_qss):
+            with open(custom_qss, 'r', encoding='utf-8') as f:
+                self.setStyleSheet(f.read())
+
 
     def keyPressEvent(self, event):
         self._current_code.append(event.key())
@@ -1298,12 +1331,10 @@ class Launcher(QWidget):
 
             random.shuffle(rec_meta)
             for meta in rec_meta:
-                card = GameCard(meta, self)
-                card.update_layout_view(settings.get("view_mode", "Grid"))
-
-                self._connect_card_buttons(card)
-                self.vbox.addWidget(card)
-                self._register_card_meta(card, meta)
+                    card = GameCard(meta, self)
+                    self._connect_card_buttons(card)
+                    self.vbox.addWidget(card)
+                    self._register_card_meta(card, meta)
 
         # --- No games fallback ---
         if not fresh_meta:
@@ -1336,15 +1367,26 @@ class Launcher(QWidget):
         self.available_tags.update(meta.get('tags', []))
 
     def apply_current_theme(self):
+        """Load the current theme from settings and apply its QSS file."""
         global theme
-        theme = themes.get(settings.get('theme', 'default'), themes['default'])
-        self.setStyleSheet(f"background-color: {theme['bg']};")
+        theme_name = settings.get('theme', 'default')
+        theme = themes.get(theme_name, themes['default'])
+        qss_path = self.resource_path(theme.get('qss', 'data/themes/default.qss'))
+
+        try:
+            with open(qss_path, 'r', encoding='utf-8') as f:
+                self.setStyleSheet(f.read())
+        except Exception:
+            # fallback to bg/fg colors if QSS fails
+            self.setStyleSheet(f"background-color: {theme.get('bg', '#2B2B2B')}; color: {theme.get('fg', '#FFFFFF')};")
+
         self.apply_theme_to_cards()
 
     def apply_theme_to_cards(self):
+        """Apply theme to each GameCard."""
         for c in self.cards:
-            c.apply_theme()
-
+            c.apply_theme()  # ensure each card uses theme colors
+            
     def move_card_up(self, card: 'GameCard'):
         idx = self.vbox.indexOf(card)
         if idx > 0:
@@ -1405,7 +1447,7 @@ class Launcher(QWidget):
         dlg = QDialog(self)
         dlg.setWindowTitle(title)
         dlg.resize(width, height)
-        dlg.setStyleSheet(f"background-color: {theme['bg']}; color: {theme['fg']};")
+        dlg.setStyleSheet(f"background-color: {theme.get('bg', '#FFFFFF')}; color: {theme.get('fg', '#222222')};")
         layout = QVBoxLayout()
         label = QLabel(text)
         label.setWordWrap(True)
@@ -1413,6 +1455,7 @@ class Launcher(QWidget):
         layout.addWidget(label)
         dlg.setLayout(layout)
         dlg.exec()
+
 
     def open_settings(self):
         dlg = SettingsDialog(self)
@@ -1427,61 +1470,89 @@ class Launcher(QWidget):
         dlg = AchievementsDialog(self)
         dlg.exec()
 
-# ------------------- APP LOCK -------------------
+# - App Lock -
+# ---------- Password Hashing ----------
 def hash_password(password, salt=None):
-    """Hash password using PBKDF2 with SHA256"""
+    """Hash a password using PBKDF2-SHA256 with a random salt."""
     if not salt:
-        salt = os.urandom(16)  # generate 16-byte random salt
-    pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100_000)
-    return binascii.hexlify(salt).decode() + ":" + binascii.hexlify(pwdhash).decode()
+        salt = os.urandom(16)
+    pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 200_000)
+    return f"{binascii.hexlify(salt).decode()}:{binascii.hexlify(pwdhash).decode()}"
 
 def verify_password(stored_password, provided_password):
-    """Verify a stored password against one provided"""
-    salt_hex, pwdhash_hex = stored_password.split(":")
-    salt = binascii.unhexlify(salt_hex)
-    new_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100_000)
-    return binascii.hexlify(new_hash).decode() == pwdhash_hex
+    """Verify a stored password against one provided using timing-safe comparison."""
+    try:
+        salt_hex, pwdhash_hex = stored_password.split(":")
+        salt = binascii.unhexlify(salt_hex)
+        new_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 200_000)
+        return hmac.compare_digest(binascii.hexlify(new_hash).decode(), pwdhash_hex)
+    except Exception:
+        return False
 
-def app_lock():
-    stored_hash = settings.get('lock_password')
-    if not stored_hash:
-        return  # no lock set
-
-    max_attempts = 5
-    lockout_duration = 60  # in seconds
-
-    # Check if currently locked
+# ---------- Lockout Logic ----------
+def check_lockout():
+    """Check if the app is currently locked and show remaining lockout time."""
     now = int(time.time())
     lock_until = settings.get('lockout_until', 0)
     if lock_until > now:
         remaining = lock_until - now
-        QMessageBox.warning(None, "Locked Out", f"Too many wrong attempts! Try again in {remaining} seconds.")
+        QMessageBox.warning(None, "Locked Out",
+                            f"Too many wrong attempts! Try again in {remaining} seconds.")
         sys.exit(1)
+        return True
+    return False
 
-    # Ask for password
-    text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password/pin:', QLineEdit.Password)
-    if not ok:
-        sys.exit(1)
+def handle_failed_attempt():
+    """Handle a failed password attempt with exponential lockout."""
+    now = int(time.time())
+    max_attempts = 5
+    base_lockout = 60  # 1 minute base
 
-    if verify_password(stored_hash, text):
-        # Correct password: reset attempts
-        settings['failed_attempts'] = 0
-        settings['lockout_until'] = 0
-        save_settings()
-        return  # allow access
-
-    # Wrong password
     settings['failed_attempts'] = settings.get('failed_attempts', 0) + 1
     remaining_tries = max_attempts - settings['failed_attempts']
 
     if remaining_tries <= 0:
+        # Exponential backoff for repeated lockouts
+        failed_lockouts = settings.get('failed_lockouts', 0)
+        lockout_duration = base_lockout * (2 ** failed_lockouts)
         settings['lockout_until'] = now + lockout_duration
-        QMessageBox.critical(None, 'Access Denied', f"Too many wrong attempts! Locked for {lockout_duration} seconds.")
+        settings['failed_attempts'] = 0
+        settings['failed_lockouts'] = failed_lockouts + 1
     else:
-        QMessageBox.critical(None, 'Access Denied', f"Wrong password! {remaining_tries} tries left.")
+        QMessageBox.critical(None, 'Access Denied',
+                             f"Wrong password! {remaining_tries} tries left.")
 
     save_settings()
-    sys.exit(1)
+
+# ---------- Main App Lock ----------
+def app_lock():
+    """Main function to lock the app until correct password is entered."""
+    stored_hash = settings.get('lock_password')
+    if not stored_hash:
+        return  # No lock set
+
+    if check_lockout():
+        return
+
+    # Ask for password until correct or user cancels
+    while True:
+        text, ok = QInputDialog.getText(None, 'App Lock', 'Enter password/pin:', QLineEdit.Password)
+        if not ok:
+            # Optionally handle cancel as a failed attempt
+            handle_failed_attempt()
+            return  # Don't exit, just prevent access
+
+        if verify_password(stored_hash, text):
+            # Correct password: reset attempts
+            settings['failed_attempts'] = 0
+            settings['failed_lockouts'] = 0
+            settings['lockout_until'] = 0
+            save_settings()
+            return  # allow access
+        else:
+            handle_failed_attempt()
+            if check_lockout():
+                return
 
 
 # ------------------- RUN -------------------

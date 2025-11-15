@@ -1,5 +1,5 @@
 import sys
-import os
+import os, json
 from pathlib import Path
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QSpinBox, QCheckBox

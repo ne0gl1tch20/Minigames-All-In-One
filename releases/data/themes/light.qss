@@ -1,0 +1,145 @@
+/* =========================================
+   MGAIO Launcher White Theme QSS
+   File: src/data/themes/white.qss
+   ========================================= */
+
+/* QWidget - base background and font */
+QWidget {
+    background-color: #FFFFFF; /* white background */
+    color: #222222;           /* dark text */
+    font-family: "Segoe UI";
+    font-size: 11pt;
+}
+
+/* QLineEdit - search bar */
+QLineEdit {
+    background-color: #F5F5F5;
+    border: 1px solid #CCCCCC;
+    border-radius: 6px;
+    padding: 6px;
+    selection-background-color: #E0E0E0;
+    color: #222222;
+}
+
+/* QComboBox - filter dropdown */
+QComboBox {
+    background-color: #F5F5F5;
+    border: 1px solid #CCCCCC;
+    border-radius: 6px;
+    padding: 4px 8px;
+    min-height: 28px;
+    color: #222222;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: 1px solid #CCCCCC;
+}
+QComboBox QAbstractItemView {
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    selection-background-color: #E0E0E0;
+    color: #222222;
+}
+
+/* QPushButton - top bar buttons */
+QPushButton {
+    background-color: #EDEDED;
+    border: 1px solid #CCCCCC;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #222222;
+}
+QPushButton:hover {
+    background-color: #DCDCDC;
+}
+QPushButton:pressed {
+    background-color: #CCCCCC;
+}
+
+/* QLabel - headers */
+QLabel {
+    color: #222222;
+}
+QLabel#rp_label, QLabel#rec_label {
+    font-weight: bold;
+    font-size: 12pt;
+}
+
+/* QScrollArea */
+QScrollArea {
+    border: none;
+    background-color: #FFFFFF;
+}
+
+/* GameCard example */
+GameCard {
+    background-color: #FAFAFA;
+    border: 1px solid #DDDDDD;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+/* Scrollbar style */
+QScrollBar:vertical {
+    border: 1px solid #DDDDDD;
+    background: #F5F5F5;
+    width: 12px;
+    margin: 0px 0px 0px 0px;
+    border-radius: 6px;
+}
+QScrollBar::handle:vertical {
+    background: #CCCCCC;
+    min-height: 20px;
+    border-radius: 6px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #AAAAAA;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+/* Play button - yellow */
+QPushButton#play_btn {
+    background-color: #FFCC00;  /* yellow */
+    color: #000000;              /* black text */
+    border-radius: 15px;         /* round based on 30px height */
+    font-weight: bold;
+}
+QPushButton#play_btn:hover {
+    background-color: #FFE066;
+}
+QPushButton#play_btn:pressed {
+    background-color: #E6B800;
+}
+
+/* How to Play button - light gray */
+QPushButton#howto_btn {
+    background-color: #EDEDED;
+    color: #222222;
+    border-radius: 15px;
+}
+QPushButton#howto_btn:hover {
+    background-color: #DCDCDC;
+}
+QPushButton#howto_btn:pressed {
+    background-color: #CCCCCC;
+}
+
+/* Favorite button - light red */
+QPushButton#favorite_btn {
+    background-color: #FFAAAA;
+    color: #222222;
+    border-radius: 15px;
+}
+QPushButton#favorite_btn:hover {
+    background-color: #FFCCCC;
+}
+QPushButton#favorite_btn:pressed {
+    background-color: #FF8888;
+}

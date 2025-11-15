@@ -96,9 +96,9 @@ class CleanRoomGame:
         pygame.display.set_caption("Clean Your Room")
         self.clock = pygame.time.Clock()
 
-        self.font_big = pygame.font.SysFont("arial", 48, bold=True)
-        self.font_med = pygame.font.SysFont("arial", 24)
-        self.font_small = pygame.font.SysFont("arial", 16)
+        self.font_big = pygame.font.SysFont("segoe ui emoji", 48, bold=True)
+        self.font_med = pygame.font.SysFont("segoe ui emoji", 24)
+        self.font_small = pygame.font.SysFont("segoe ui emoji", 16)
 
         # load settings & leaderboard
         self.settings = load_json(SETTINGS_FILE, DEFAULT_SETTINGS.copy())

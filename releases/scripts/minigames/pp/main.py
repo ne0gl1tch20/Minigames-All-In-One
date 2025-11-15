@@ -122,9 +122,9 @@ class PizzaPanic:
         self.clock = pygame.time.Clock()
 
         # fonts
-        self.font_big = pygame.font.SysFont("arial", 48, bold=True)
-        self.font_med = pygame.font.SysFont("arial", 26)
-        self.font_sm = pygame.font.SysFont("arial", 18)
+        self.font_big = pygame.font.SysFont("segoe ui emoji", 48, bold=True)
+        self.font_med = pygame.font.SysFont("segoe ui emoji", 26)
+        self.font_sm = pygame.font.SysFont("segoe ui emoji", 18)
 
         # data
         self.settings = load_json(SETTINGS_FILE, DEFAULT_SETTINGS.copy())

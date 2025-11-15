@@ -90,9 +90,9 @@ class BaseMinigame:
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption(APP_NAME)
         self.clock = pygame.time.Clock()
-        self.font_big = pygame.font.SysFont("arial", 48, bold=True)
-        self.font_med = pygame.font.SysFont("arial", 22)
-        self.font_sm = pygame.font.SysFont("arial", 16)
+        self.font_big = pygame.font.SysFont("segoe ui emoji", 48, bold=True)
+        self.font_med = pygame.font.SysFont("segoe ui emoji", 22)
+        self.font_sm = pygame.font.SysFont("segoe ui emoji", 16)
 
         # Load settings / leaderboard
         self.settings = load_json(SETTINGS_FILE, DEFAULT_SETTINGS.copy())
@@ -709,7 +709,7 @@ class TypeRushGame(BaseMinigame):
 
         # draw words
         for s in self.words_on_screen:
-            f = pygame.font.SysFont("arial", s["font_size"], bold=True)
+            f = pygame.font.SysFont("segoe ui emoji", s["font_size"], bold=True)
             txt = f.render(s["word"], True, (230,230,250))
             w = txt.get_width()
             h = txt.get_height()

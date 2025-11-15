@@ -70,8 +70,8 @@ class LizardDefender:
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption(APP_NAME + " 🦎")
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont("arial", 22)
-        self.bigfont = pygame.font.SysFont("arial", 40, bold=True)
+        self.font = pygame.font.SysFont("segoe ui emoji", 22)
+        self.bigfont = pygame.font.SysFont("segoe ui emoji", 40, bold=True)
 
         # game data
         self.running = True
