@@ -3,6 +3,42 @@
 All notable changes to this project are documented here.  
 This changelog follows the Keep a Changelog format.
 
+
+---
+
+## [v0.3.1-alpha] - November 15 2025
+**Status:** 🧪 Pre-release  
+**Commit:** ...
+
+Gotchu! 🔥 Here's the v0.3.1 changelog in the exact What's New / Bug Fixes format you want — clean, structured, and ready to drop into your CHANGELOG.md 😎📦
+
+
+---
+
+[v0.3.1-alpha] – November 17 2025
+
+Status: 🧪 Pre-release
+
+### 🆕 What’s New
+
+- Strengthened App Lock with improved validation and safer fallback behavior.
+- Added early groundwork for multi-platform launcher detection (PC vs Android). Which means Android is now supported!!
+- Cleaner and more readable launcher startup logs.
+
+
+### 🐛 Bug Fixes
+
+- Fixed a bug where App Lock didn’t always stop the launcher on first boot.
+- Reduced rare errors when initializing QApplication on Android-based environments.
+- Minor performance improvements during the first-run startup.
+
+- **That's 35 minigames in total!**
+
+### 🧩 Setup Notes
+- `runit.bat` automatically installs required libraries:
+  - `pygame`, `librosa`, `PySide6`, `numpy`, `pycryptodome`
+- If Python 3.12 isn’t installed, it downloads automatically  
+
 ---
 
 ## [v0.3.0-alpha] - November 15 2025
