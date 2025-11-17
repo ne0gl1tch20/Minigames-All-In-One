@@ -8,7 +8,7 @@ This changelog follows the Keep a Changelog format.
 
 ## [v0.3.1-alpha] - November 17 2025
 **Status:** 🧪 Pre-release  
-**Commit:** ...
+**Commit:**  9ab1341
 
 ### 🆕 What’s New
 
