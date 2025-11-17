@@ -1,4 +1,4 @@
-# scripts/main.py
+# main.py
 """
 The minimal entry point for the MGAIO Launcher application.
 Initializes the QApplication, performs app lock check, and runs the main window.
