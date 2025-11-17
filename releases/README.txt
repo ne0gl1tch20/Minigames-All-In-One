@@ -9,6 +9,7 @@ Required Python packages to enjoy the game fully:
 - pygame
 - PySide6
 - numpy
+- psutil
 
 Make sure to install them using pip if you haven't already:
 
