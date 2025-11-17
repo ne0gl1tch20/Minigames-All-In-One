@@ -27,7 +27,7 @@ This changelog follows the Keep a Changelog format.
 
 ### 🧩 Setup Notes
 - `runit.bat` automatically installs required libraries:
-  - `pygame`, `librosa`, `PySide6`, `numpy`, `pycryptodome`
+  - `pygame`, `librosa`, `PySide6`, `numpy`, `pycryptodome`, `psutil`
 - If Python 3.12 isn’t installed, it downloads automatically  
 
 ---
