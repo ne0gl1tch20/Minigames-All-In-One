@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 # --- VERSION ---
-LAUNCHER_VERSION = "v0.3.0-alpha"
+LAUNCHER_VERSION = "v0.3.1-alpha"
 
 # ------------------- PATHS / CONFIG -------------------
 if os.name == 'nt':
