@@ -6,18 +6,9 @@ This changelog follows the Keep a Changelog format.
 
 ---
 
-## [v0.3.1-alpha] - November 15 2025
+## [v0.3.1-alpha] - November 17 2025
 **Status:** 🧪 Pre-release  
 **Commit:** ...
-
-Gotchu! 🔥 Here's the v0.3.1 changelog in the exact What's New / Bug Fixes format you want — clean, structured, and ready to drop into your CHANGELOG.md 😎📦
-
-
----
-
-[v0.3.1-alpha] – November 17 2025
-
-Status: 🧪 Pre-release
 
 ### 🆕 What’s New
 
