@@ -1,7 +1,7 @@
 """
 Multi-platform entry point for the MGAIO Launcher application.
-Uses psutil + system checks to detect if running on Android (Pydroid 3)
-or Windows, then loads the correct launcher UI.
+Uses psutil + system checks to detect Android (Pydroid 3) or Windows,
+then loads the correct launcher UI. Supports FORCED_OS_SELECTION override.
 """
 
 import sys
@@ -19,15 +19,22 @@ from scripts.utils.security import app_lock
 
 
 # ------------------------------------------------------------
+# FORCED OS SELECTION
+# ------------------------------------------------------------
+# 0 = AUTO (detect automatically)
+# 1 = ANDROID
+# 2 = PC
+FORCED_OS_SELECTION = 0  # <-- Change this to 1 or 2 to force OS
+
+
+# ------------------------------------------------------------
 # DEVICE / PLATFORM DETECTION (USING PSUTIL)
 # ------------------------------------------------------------
-
 def is_android_device():
     """
     Detects Android/Pydroid 3 using psutil + environment checks.
     More accurate than relying on sys.platform alone.
     """
-
     try:
         # 1. Pydroid 3 signature
         if "PYDROID3" in os.environ.get("PATH", ""):
@@ -64,20 +71,29 @@ def is_windows_device():
 
 
 # ------------------------------------------------------------
-# IMPORT CORRECT LAUNCHER
+# IMPORT CORRECT LAUNCHER WITH FORCED_OS_SELECTION
 # ------------------------------------------------------------
 try:
-    if is_android_device():
-        print("📱 Android device detected → Loading Mobile Launcher")
+    if FORCED_OS_SELECTION == 1:
+        print("📱 Forced to Android → Loading Mobile Launcher")
         from scripts.gui.launcher_windowMobile import Launcher
 
-    elif is_windows_device():
-        print("🖥️ Windows PC detected → Loading Desktop Launcher")
+    elif FORCED_OS_SELECTION == 2:
+        print("🖥️ Forced to PC → Loading Desktop Launcher")
         from scripts.gui.launcher_window import Launcher
 
-    else:
-        print("🟦 Unknown device → Defaulting to Desktop Launcher")
-        from scripts.gui.launcher_window import Launcher
+    else:  # AUTO
+        if is_android_device():
+            print("📱 Android device detected → Loading Mobile Launcher")
+            from scripts.gui.launcher_windowMobile import Launcher
+
+        elif is_windows_device():
+            print("🖥️ Windows PC detected → Loading Desktop Launcher")
+            from scripts.gui.launcher_window import Launcher
+
+        else:
+            print("🟦 Unknown device → Defaulting to Desktop Launcher")
+            from scripts.gui.launcher_window import Launcher
 
 except Exception as e:
     print("Error selecting launcher:", e)
