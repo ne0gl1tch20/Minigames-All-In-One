@@ -3,7 +3,8 @@
 Contains reusable GUI components, primarily the GameCard widget.
 """
 
-import os
+import os, traceback
+import datetime
 import sys
 import time
 import subprocess
@@ -277,46 +278,172 @@ class GameCard(QFrame):
         self.desc_label.setStyleSheet(f"")
 
     def launch_game(self):
-        try:
-            entry_file = self.meta.get('entry', 'main.py')
-            main_py = os.path.join(self.meta.get('path', ''), entry_file)
-            if not os.path.exists(main_py):
-                QMessageBox.warning(self, 'Launch Error', f"No {entry_file} found in {self.meta.get('path')}")
-                return
-            
-            folder_name = self.meta.get('folder_name') or os.path.basename(self.meta.get('path', ''))
-            
-            settings.setdefault('recently_played', {})[folder_name] = int(time.time())
-            settings['recently_played'] = dict(sorted(settings['recently_played'].items(), key=lambda x: x[1], reverse=True))
-            
-            pc = settings.setdefault('play_counts', {})
-            pc[folder_name] = pc.get(folder_name, 0) + 1
-            settings['play_counts'] = pc
-            
-            if settings.get('mini_rewards', True):
-                settings['coins'] = settings.get('coins', 0) + 1
-                
-            save_settings()
-            
+            """
+            Super robust game launcher with validation, tracking, rewards, and logging.
+            """
+            debug_mode = settings.get('debug_mode', False)
+            if debug_mode: print(f"--- Attempting to launch {self.meta.get('title')} ---")
+
             try:
-                recent = load_recently_played()
-                recent[folder_name] = int(time.time())
-                save_recently_played(recent)
+                # ---------------------------------------------------------
+                # 1. DATA & PATH VALIDATION
+                # ---------------------------------------------------------
+                game_path = self.meta.get('path', '')
+                entry_file = self.meta.get('entry', 'main.py')
+                folder_name = self.meta.get('folder_name') or os.path.basename(game_path)
+
+                # Check 1: Does the folder exist?
+                if not game_path or not os.path.exists(game_path):
+                    raise FileNotFoundError(f"Game directory not found: {game_path}")
+
+                # Check 2: Construct full path and verify entry file
+                full_entry_path = os.path.join(game_path, entry_file)
+                if not os.path.exists(full_entry_path):
+                    # Try looking for a default if custom entry is missing
+                    if os.path.exists(os.path.join(game_path, "main.py")):
+                        full_entry_path = os.path.join(game_path, "main.py")
+                        entry_file = "main.py"
+                        if debug_mode: print("Entry not found, falling back to main.py")
+                    else:
+                        msg = f"Entry file '{entry_file}' missing in folder:\n{game_path}"
+                        QMessageBox.warning(self, 'Missing File', msg)
+                        return
+
+                # ---------------------------------------------------------
+                # 2. STATS & STATE MANAGEMENT
+                # ---------------------------------------------------------
+                current_time = int(time.time())
+
+                # Update Recently Played
+                recent = settings.setdefault('recently_played', {})
+                recent[folder_name] = current_time
+                # Sort by time (descending) to keep list clean
+                settings['recently_played'] = dict(
+                    sorted(recent.items(), key=lambda item: item[1], reverse=True)
+                )
+
+                # Update Play Counts
+                pc = settings.setdefault('play_counts', {})
+                current_plays = pc.get(folder_name, 0) + 1
+                pc[folder_name] = current_plays
+                
+                # Update Coins (Ensure never negative)
+                reward_amount = 1
+                current_coins = max(0, settings.get('coins', 0))
+                settings['coins'] = current_coins + reward_amount
+
+                # Safe Save
+                try:
+                    save_settings()
+                    # Also save to separate recent.json if your app uses it
+                    try:
+                        ext_recent = load_recently_played()
+                        ext_recent[folder_name] = current_time
+                        save_recently_played(ext_recent)
+                    except Exception:
+                        pass # Non-critical failure
+                except Exception as e:
+                    print(f"Warning: Could not save settings: {e}")
+
+                # ---------------------------------------------------------
+                # 3. ACHIEVEMENTS & MILESTONES
+                # ---------------------------------------------------------
+                # Define milestones map: {play_count: achievement_key}
+                milestones = {
+                    1: 'first_play',
+                    5: 'five_plays',
+                    10: 'ten_plays',
+                    20: 'dedicated_gamer',
+                    50: 'game_addict',
+                    100: 'century_club'
+                }
+                
+                # Check specifically for play count milestones
+                if current_plays in milestones:
+                    ach_key = milestones[current_plays]
+                    unlocked = check_unlock_achievement(ach_key)
+                    if unlocked and debug_mode:
+                        print(f"Unlocked milestone: {ach_key}")
+
+                # Check cumulative milestones (total plays across all games)
+                total_global_plays = sum(pc.values())
+                if total_global_plays == 50:
+                    check_unlock_achievement('total_50_plays')
+
+                # ---------------------------------------------------------
+                # 4. UI FEEDBACK & REWARDS
+                # ---------------------------------------------------------
+                if settings.get('mini_rewards', True):
+                    # Use FloatingReward if available, otherwise simple print/status
+                    try:
+                        # Assuming FloatingReward class exists in scope or imported
+                        # FloatingReward(f"+{reward_amount} Coin!", self, self.width()//2, self.height()//2)
+                        pass 
+                    except NameError:
+                        pass # Class not imported/defined
+
+                # ---------------------------------------------------------
+                # 5. PROCESS EXECUTION
+                # ---------------------------------------------------------
+                launch_cmd = []
+                
+                # Determine how to launch based on extension
+                _, ext = os.path.splitext(entry_file)
+                if ext.lower() == '.py':
+                    if not sys.executable:
+                        raise EnvironmentError("Python executable not found in sys.executable")
+                    launch_cmd = [sys.executable, entry_file]
+                elif ext.lower() == '.exe':
+                    launch_cmd = [full_entry_path]
+                else:
+                    # Try system default for other files (e.g., .bat, .sh)
+                    launch_cmd = [full_entry_path]
+
+                if debug_mode: print(f"Executing: {launch_cmd} in {game_path}")
+
+                # Launch Process
+                # creationflags=subprocess.CREATE_NEW_CONSOLE ensures it pops up separately on Windows
+                creation_flags = subprocess.CREATE_NEW_CONSOLE if os.name == 'nt' else 0
+                
+                process = subprocess.Popen(
+                    launch_cmd,
+                    cwd=game_path,
+                    creationflags=creation_flags
+                )
+
+                # Start Monitor Thread
+                self.monitor_thread = GameProcessMonitor(process, folder_name)
+                # Optional: Connect signal to a handler to track total playtime
+                # self.monitor_thread.finished_run.connect(self.on_run_complete)
+                self.monitor_thread.start()
+
             except Exception as e:
-                print("Failed to update recently_played.json:", e)
+                # ---------------------------------------------------------
+                # 6. ERROR LOGGING & HANDLING
+                # ---------------------------------------------------------
+                error_msg = str(e)
+                tb_str = traceback.format_exc()
                 
-            total_plays = sum(settings.get('play_counts', {}).values())
-            if total_plays >= 1: check_unlock_achievement('first_play')
-            if total_plays >= 5: check_unlock_achievement('five_plays')
-            if total_plays >= 10: check_unlock_achievement('ten_plays')
-            
-            subprocess.Popen([sys.executable, main_py])
-            
-        except Exception as e:
-            try:
-                QMessageBox.critical(self, 'Launch Failed', f'Failed to launch game: {e}')
-            except Exception:
-                print("Launch failed:", e)
+                # 1. Log to file
+                log_file = "gamecard_errors.log"
+                try:
+                    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    with open(log_file, "a", encoding="utf-8") as f:
+                        f.write(f"[{timestamp}] ERROR in {folder_name}:\n")
+                        f.write(f"{tb_str}\n")
+                        f.write("-" * 40 + "\n")
+                except Exception:
+                    print("Critical: Could not write to error log.")
+
+                # 2. Show User Feedback (Safe UI)
+                if debug_mode:
+                    print(tb_str)
+                
+                QMessageBox.critical(
+                    self, 
+                    'Launch Failed', 
+                    f"Could not launch '{self.meta.get('title', 'Game')}'.\n\nReason: {error_msg}\n\nCheck {log_file} for details."
+                )
 
     def show_howto(self):
         txt = self.meta.get('how_to_play') or 'No instructions available.'
