@@ -24,7 +24,8 @@ from scripts.utils.security import app_lock
 # 0 = AUTO (detect automatically)
 # 1 = ANDROID
 # 2 = PC
-FORCED_OS_SELECTION = 0  # <-- Change this to 1 or 2 to force OS
+FORCED_OS_SELECTION = 0
+# <-- Change this to 1 or 2 to force OS
 
 
 # ------------------------------------------------------------
