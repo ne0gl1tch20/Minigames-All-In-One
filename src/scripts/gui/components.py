@@ -353,9 +353,6 @@ class GameCard(QFrame):
                     1: 'first_play',
                     5: 'five_plays',
                     10: 'ten_plays',
-                    20: 'dedicated_gamer',
-                    50: 'game_addict',
-                    100: 'century_club'
                 }
                 
                 # Check specifically for play count milestones
